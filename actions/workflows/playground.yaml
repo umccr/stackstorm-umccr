@@ -1,0 +1,25 @@
+version: "2.0" # mistral version
+name: umccr.playground
+description: Playground workflow
+
+workflows:
+  main:
+    type: direct
+    input:
+      - runfolder
+    output:
+      output_the_whole_workflow_context: <% $ %>
+
+    tasks:
+      print_runfolder:
+        action: core.local
+        input:
+          cmd: 'echo "Runfolder <% $.runfolder %> ready. Starting workflow..."'
+        on-success:
+          - post_runfolder
+
+      post_runfolder:
+        action: chatops.post_message
+        input:
+          channel: "#arteria"
+          message: "New runfolder ready: <% $.runfolder %>"

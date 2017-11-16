@@ -1,0 +1,9 @@
+---
+name: umccr
+description: Pack for running UMCCR sequencing center operations
+keywords:
+  - sequencing
+  - life science
+version: 0.1.0
+author: Florian Reisinger
+email: florian.reisinger@unimelb.edu.au

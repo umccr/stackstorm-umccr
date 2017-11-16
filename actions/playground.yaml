@@ -1,0 +1,14 @@
+---
+name: playground
+description: Playground workflow to experiment with st2 and UMCCR workflows
+enabled: false
+runner_type: mistral-v2
+entry_point: workflows/playground.yaml
+pack: umccr
+parameters:
+  runfolder:
+    required: true
+    type: string
+  runfolder_name:
+    required: true
+    type: string
