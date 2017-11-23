@@ -1,0 +1,18 @@
+---
+name: "list-runfolders"
+pack: "umccr"
+action_ref: "core.http"
+description: "Fetch runfolders from an Arteria runfolder service."
+ack:
+  format: "Your wish is my command!"
+  append_url: true
+result:
+  format: |
+    The following runfolders where detected:
+    {% for folder in execution.result.body.runfolders -%}
+        -> Folder: *{{folder.path}}* with state: *{{folder.state}}*
+    {%+ endfor %}
+formats:
+  - display: "(fetch|get) runfolder status [from <url>]"
+    representation:
+      - "(fetch|get) runfolder status( from)? {{url='http://172.19.0.1:8888/api/1.0/runfolders?state=*'}}"
