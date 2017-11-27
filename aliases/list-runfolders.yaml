@@ -15,4 +15,4 @@ result:
 formats:
   - display: "(fetch|get) runfolder status [from <url>]"
     representation:
-      - "(fetch|get) runfolder status( from)? {{url='http://172.19.0.1:8888/api/1.0/runfolders?state=*'}}"
+      - "(fetch|get) runfolder status( from)? {{url='http://172.19.0.1:8888/api/1.0/runfolders?state=*'}}( now)?[.|!]?"
