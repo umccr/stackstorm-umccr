@@ -37,6 +37,7 @@ workflows:
           port: 2222
           username: "limsadmin"
           private_key: "/home/stanley/.ssh/stanley_rsa"
+          timeout: 43200
         retry:
           count: 3
           delay: 10
