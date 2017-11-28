@@ -5,10 +5,10 @@ description: "UMCCR rule acting on new runfolder triggers, kicking off the first
 enabled: false
 
 trigger:
-  ref: arteria.incoming_ready
   type: arteria.incoming_ready
-  parameters:
-criteria:
+
+criteria:  {}
+
 action:
   ref: umccr.playground
   parameters:
