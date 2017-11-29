@@ -1,9 +1,7 @@
 language: generic
 notifications:
   email: false
-  slack:
-    rooms:
-      - umccr:$SLACK_ARTERIA_TOKEN
+  slack: "umccr:$SLACK_ARTERIA_TOKEN"
     # on_success: change
 script:
 - ls -lah
