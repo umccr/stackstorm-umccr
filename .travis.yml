@@ -6,4 +6,4 @@ notifications:
 script:
 - ls -lah
 after_success:
-  - ./travis-remote-trigger.sh
+  # - ./travis-remote-trigger.sh
