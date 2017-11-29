@@ -1,7 +1,8 @@
 language: generic
 notifications:
   email: false
+  #TODO configure Slack
 script:
 - ls -lah
 after_success:
-  - ./docker-trigger.sh
+  - ./travis-remote-trigger.sh
