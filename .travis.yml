@@ -3,7 +3,7 @@ notifications:
   email: false
   slack:
     secure: "lpjcOlx/frsCHMzpGf1sFp9+EWDwiLHn4ZZ6+GoEOelw2nGzPsotCE6ZBDnmFkS9URp3W+1C//sg9lTuRNpsyL+n/IKSySwBm6OWFvV7IDdmvjF0Ja2dc65ie5rKSg0+CoC9GWsL7iaItrZ7FKISrbO5o4j0QLAz90yPDVTACW7KJztdhbngBsk6fo8VqpNQpxEuZbxuA1YQBPkwl/YDGO5mPe1jH8zulQL3uV14wUHnCfA4MLF15zBLGK88YwLPSsqc4V/fQHnkjflEPdHTCdYGyYh16OBliBg4H/XyglkSdwowr+/sGah7G5fuim6/M8mJm+mOCmb1nuKVVJP8ZuLVoxDMcJtJObwsLhTHYvvp9r5ZWMYv7OIq/ebyt/P0yETNyL9AHukZVzhZIBuSrRmcqCc7mb7d+jhvmqlBRgnhs+PA/haTJd0ii0hIzqgXB5Qpa+s4360L49IzuXh/6xTlpsLiGznuM1oOXOYCjJWiZBxSobDxdari1P84YlKalyIBnzgiXDFnLm/qZTHdHs90Rtv/gmgmoTQXeZ6PEItOQXblXR71oEYnbn2c6/6xcRrWmvEMGwWhOOndVRoLvjx92RRlSFUu813tkgewMAkJ3mB7qVuGr3bfjeHoBxa1qQMBaSx5nVc4h/IxPZSn4wc3SjQ58KD0+js4Kl1hs40="
-    on_success: change
+    # on_success: change
 script:
 - ls -lah
 after_success:
