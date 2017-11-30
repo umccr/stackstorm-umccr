@@ -2,7 +2,8 @@
 
 body='{
 "request": {
-"branch":"master"
+  "message": "Build triggered by api request",
+  "branch":"master"
 }}'
 
 curl -v -s -X POST \
