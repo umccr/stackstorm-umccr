@@ -1,0 +1,4 @@
+---
+name: runfolder.bcl2fastq
+pack: umccr
+description: UMCCR trigger used to notify of runfolder to bcl2fastq converstion executions.

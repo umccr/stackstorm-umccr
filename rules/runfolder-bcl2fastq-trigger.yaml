@@ -1,0 +1,16 @@
+---
+name: runfolder_bcl2fastq_trigger_rule
+pack: umccr
+description: Rule to act on umccr.runfolder.bcl2fastq trigger instances
+enabled: false
+
+trigger:
+  type: umccr.runfolder.bcl2fastq
+
+criteria: {}
+
+action:
+  ref: chatops.post_message
+  parameters:
+    message: 'Received webhook data: {{trigger}}'
+    channel: '#arteria'
