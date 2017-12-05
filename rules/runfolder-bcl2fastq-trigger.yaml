@@ -13,4 +13,5 @@ action:
   ref: chatops.post_message
   parameters:
     message: 'Received webhook data: {{trigger}}'
+    extra: {{trigger.extra}}
     channel: '#arteria'
