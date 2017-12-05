@@ -16,6 +16,7 @@ action:
     runfolder_name: '{{trigger.runfolder_name}}'
     runfolder_host: 172.19.0.1
     bcl2fastq_host: 172.19.0.1
+    bcl2fastq_port: '9999'
     rsync_dest_host: spartan.hpc.unimelb.edu.au
     rsync_dest_path: '{{trigger.destination}}'
     rsync_user: '{{trigger.remote_user}}'

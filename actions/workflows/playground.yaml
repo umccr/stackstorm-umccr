@@ -10,6 +10,7 @@ workflows:
       - runfolder_name
       - runfolder_host
       - bcl2fastq_host
+      - bcl2fastq_port
       - rsync_user
       - rsync_dest_host
       - rsync_dest_path
@@ -35,7 +36,7 @@ workflows:
       bcl2fastq_conversion:
         action: core.http
         input:
-          url: 'http://<% $.bcl2fastq_host %>/api/1.0/start/<% $.runfolder_name %>'
+          url: 'http://<% $.bcl2fastq_host %>:<% $.bcl2fastq_port %>/api/1.0/start/<% $.runfolder_name %>'
           body: '{"additional_args": "--ignore-missing-bcls --ignore-missing-filter --ignore-missing-positions --ignore-missing-controls"}'
           method: "POST"
         publish:
