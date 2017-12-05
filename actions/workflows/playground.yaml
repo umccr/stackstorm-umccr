@@ -56,7 +56,7 @@ workflows:
         action: core.http
         wait-after: 60
         input:
-          url: 'http://<% $.bcl2fastq_host %>/api/1.0/status/<% $.bcl2fastq_job %>'
+          url: 'http://<% $.bcl2fastq_host %>:<% $.bcl2fastq_port %>/api/1.0/status/<% $.bcl2fastq_job %>'
           method: "GET"
         publish:
           bcl2fastq_status: <% task(bcl2fastq_status).result.body.state %>
@@ -84,7 +84,7 @@ workflows:
       rsync_to_destination:
         action: core.remote
         input:
-          cmd: 'rsync -avzh <% $.runfolder %> -e "ssh" <% $.rsync_user %>@<% $.rsync_dest_host %>:<% $.rsync_dest_path %>'
+          cmd: 'rsync -avzh /opt/bcl2fastq_output/<% $.runfolder_name %> -e "ssh" <% $.rsync_user %>@<% $.rsync_dest_host %>:<% $.rsync_dest_path %>'
           hosts: <% $.runfolder_host %>
           port: 2222
           username: "limsadmin"
