@@ -12,8 +12,10 @@ criteria:  {}
 action:
   ref: umccr.playground
   parameters:
-    rsync_dest_host: spartan.hpc.unimelb.edu.au
-    rsync_user: '{{trigger.remote_user}}'
-    rsync_dest_path: '{{trigger.destination}}'
     runfolder: '{{trigger.runfolder}}'
+    runfolder_name: '{{trigger.runfolder_name}}'
     runfolder_host: 172.19.0.1
+    bcl2fastq_host: 172.19.0.1
+    rsync_dest_host: spartan.hpc.unimelb.edu.au
+    rsync_dest_path: '{{trigger.destination}}'
+    rsync_user: '{{trigger.remote_user}}'
