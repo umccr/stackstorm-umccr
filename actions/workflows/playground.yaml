@@ -11,6 +11,7 @@ workflows:
       - runfolder_host
       - bcl2fastq_host
       - bcl2fastq_port
+      - bcl2fastq_outdir
       - rsync_user
       - rsync_dest_host
       - rsync_dest_path
@@ -37,7 +38,7 @@ workflows:
         action: core.http
         input:
           url: 'http://<% $.bcl2fastq_host %>:<% $.bcl2fastq_port %>/api/1.0/start/<% $.runfolder_name %>'
-          body: '{"additional_args": "--ignore-missing-bcls --ignore-missing-filter --ignore-missing-positions --ignore-missing-controls"}'
+          body: '{}'
           method: "POST"
         publish:
           bcl2fastq_job: <% task(bcl2fastq_conversion).result.body.job_id %>
@@ -84,7 +85,7 @@ workflows:
       rsync_to_destination:
         action: core.remote
         input:
-          cmd: 'rsync -avzh /opt/bcl2fastq_output/<% $.runfolder_name %> -e "ssh" <% $.rsync_user %>@<% $.rsync_dest_host %>:<% $.rsync_dest_path %>'
+          cmd: 'rsync -avzh <% $.bcl2fastq_outdir %>/<% $.runfolder_name %> -e "ssh" <% $.rsync_user %>@<% $.rsync_dest_host %>:<% $.rsync_dest_path %>'
           hosts: <% $.runfolder_host %>
           port: 2222
           username: "limsadmin"

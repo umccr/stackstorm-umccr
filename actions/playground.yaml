@@ -21,6 +21,9 @@ parameters:
   bcl2fastq_port:
     required: true
     type: string
+  bcl2fastq_outdir:
+    required: true
+    type: string
   rsync_user:
     required: true
     type: string
