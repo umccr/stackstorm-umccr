@@ -19,21 +19,17 @@ workflows:
       output_the_whole_workflow_context: <% $ %>
 
     tasks:
-      print_runfolder:
-        action: core.local
-        input:
-          cmd: 'echo "Runfolder <% $.runfolder %> ready. Starting workflow..."'
-        on-success:
-          - post_runfolder
-          - bcl2fastq_conversion
-
+      # Notify of newly detected runfolder
       post_runfolder:
         action: chatops.post_message
         input:
-          channel: "#arteria"
-          message: "New runfolder ready: <% $.runfolder %>"
+          channel: "#arteria-dev"
+          message: "New runfolder ready: <% $.runfolder %>. Starting conversion..."
+        on-success:
+          - bcl2fastq_conversion
+          
 
-
+      # Start the bcl2fastq conversion and notify of start
       bcl2fastq_conversion:
         action: core.http
         input:
@@ -49,13 +45,14 @@ workflows:
       post_bcl2fastq_start:
         action: chatops.post_message
         input:
-          channel: "#arteria"
+          channel: "#arteria-dev"
           message: "Runfolder <% $.runfolder %> converting (job: <% $.bcl2fastq_job %>)."
 
 
+      # Monitor the conversion status and notify of status
       bcl2fastq_status:
         action: core.http
-        wait-after: 60
+        wait-after: 300 # check for status updates every 5min
         input:
           url: 'http://<% $.bcl2fastq_host %>:<% $.bcl2fastq_port %>/api/1.0/status/<% $.bcl2fastq_job %>'
           method: "GET"
@@ -71,17 +68,17 @@ workflows:
       post_bcl2fastq_success:
         action: chatops.post_message
         input:
-          channel: "#arteria"
+          channel: "#arteria-dev"
           message: "Runfolder <% $.runfolder %> (job: <% $.bcl2fastq_job %>) successfully converted."
 
       post_bcl2fastq_error:
         action: chatops.post_message
         input:
-          channel: "#arteria"
+          channel: "#arteria-dev"
           message: "Runfolder <% $.runfolder %> (job: <% $.bcl2fastq_job %>) errored."
 
 
-
+      # sync the data to the HPC
       rsync_to_destination:
         action: core.remote
         input:
@@ -91,7 +88,7 @@ workflows:
           username: "limsadmin"
           private_key: "/home/stanley/.ssh/stanley_rsa"
           timeout: 43200
-        retry:
+        retry: # retry the command 3 times with 10sec delay in case of error, then fail
           count: 3
           delay: 10
         on-success:
@@ -102,11 +99,11 @@ workflows:
       post_rsync_success:
         action: chatops.post_message
         input:
-          channel: "#arteria"
+          channel: "#arteria-dev"
           message: "Runfolder <% $.runfolder %> successfuly synced to <% $.rsync_dest_host %>"
 
       post_rsync_failure:
         action: chatops.post_message
         input:
-          channel: "#arteria"
+          channel: "#arteria-dev"
           message: "Runfolder <% $.runfolder %> sync failed!"

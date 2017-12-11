@@ -1,0 +1,55 @@
+version: "2.0" # mistral version
+name: umccr.sync2hpc
+description: Data sync to HPC workflow
+
+workflows:
+  main:
+    type: direct
+    input:
+      - source_path
+      - dest_host
+      - dest_path
+      - rsync_ssh_user
+    output:
+      output_the_whole_workflow_context: <% $ %>
+
+    tasks:
+      # Notify of workflow start
+      post_runfolder:
+        action: chatops.post_message
+        input:
+          channel: "#arteria-dev"
+          message: "Starting rsync of <% $.source_path %>"
+        on-success:
+          - rsync_to_destination
+
+
+      # sync the data to the HPC
+      rsync_to_destination:
+        action: core.remote
+        input:
+          cmd: 'rsync -avzh <% $.source_path %> -e "ssh" <% $.rsync_ssh_user %>@<% $.dest_host %>:<% $.dest_path %>'
+          hosts: 172.19.0.1
+          port: 2222
+          username: "limsadmin"
+          private_key: "/home/stanley/.ssh/stanley_rsa"
+          timeout: 43200
+        retry: # retry the command 3 times with 10sec delay in case of error, then fail
+          count: 3
+          delay: 10
+        on-success:
+          - post_rsync_success
+        on-error:
+          - post_rsync_failure
+
+      post_rsync_success:
+        action: chatops.post_message
+        input:
+          channel: "#arteria-dev"
+          message: "Runfolder <% $.source_path %> successfuly synced to <% $.dest_host %>"
+
+      post_rsync_failure:
+        action: chatops.post_message
+        input:
+          channel: "#arteria-dev"
+          message: "Runfolder <% $.source_path %> sync failed!"

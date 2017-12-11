@@ -1,8 +1,8 @@
 ---
-name: "list-runfolders"
+name: "list_runfolders"
 pack: "umccr"
-action_ref: "core.http"
 description: "Fetch runfolders from an Arteria runfolder service."
+action_ref: "core.http"
 ack:
   format: "Your wish is my command!"
   append_url: true

@@ -1,0 +1,15 @@
+---
+name: launch_conversion
+pack: umccr
+description: "UMCCR rule acting on new runfolder triggers, launching the bcl2fastq-conversion workflow."
+enabled: false
+
+trigger:
+  type: arteria.incoming_ready
+
+criteria:  {}
+
+action:
+  ref: umccr.bcl2fastq_conversion
+  parameters:
+    runfolder_name: '{{trigger.runfolder_name}}'

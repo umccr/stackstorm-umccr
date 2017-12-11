@@ -1,0 +1,16 @@
+---
+name: umccr-runfolder-notify
+pack: umccr
+description: "UMCCR rule acting on new runfolder triggers, notifying of new runfolders."
+enabled: false
+
+trigger:
+  type: arteria.incoming_ready
+
+criteria:  {}
+
+action:
+  ref: chatops.post_message
+  parameters:
+    channel: '#arteria-dev'
+    message: 'New runfolder is ready: {{trigger.runfolder_name}}'

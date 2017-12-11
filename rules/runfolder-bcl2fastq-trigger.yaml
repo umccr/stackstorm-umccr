@@ -14,4 +14,4 @@ action:
   parameters:
     message: 'Received webhook data: {{trigger}}'
     extra: '{{trigger.extra}}'
-    channel: '#arteria'
+    channel: '#arteria-dev'

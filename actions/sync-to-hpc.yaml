@@ -1,0 +1,20 @@
+---
+name: sync2hpc
+pack: umccr
+description: Data sync to HPC workflow
+enabled: false
+runner_type: mistral-v2
+entry_point: workflows/sync-to-hpc.yaml
+parameters:
+  source_path:
+    required: true
+    type: string
+  dest_host:
+    required: true
+    type: string
+  dest_path:
+    required: true
+    type: string
+  rsync_ssh_user:
+    required: true
+    type: string
