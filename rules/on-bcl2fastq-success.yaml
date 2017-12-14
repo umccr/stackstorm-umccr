@@ -1,0 +1,19 @@
+---
+name: on_bcl2fastq_success
+pack: umccr
+description: Rule to act on umccr.bcl2fastq trigger instances
+enabled: false
+
+trigger:
+  type: umccr.bcl2fastq
+
+criteria:
+  trigger.status:
+    pattern: "done"
+    type: equals
+
+action:
+  ref: chatops.post_message
+  parameters:
+    message: 'bcl2fastq conversion succeeded for runfolder {{trigger.runfolder}}!'
+    channel: '#arteria-dev'
