@@ -9,3 +9,16 @@ parameters:
   runfolder_name:
     required: true
     type: string
+  skip_notify:
+    default:
+      - "post_runfolder"
+      - "bcl2fastq_conversion"
+      - "post_bcl2fastq_start"
+      - "bcl2fastq_status"
+      - "post_bcl2fastq_success"
+      - "post_bcl2fastq_error"
+notify:
+  on-complete:
+    message: "bcl2fastq conversion workflow completed!"
+    routes:
+      - "hubot"

@@ -18,3 +18,9 @@ parameters:
   rsync_ssh_user:
     required: true
     type: string
+  skip_notify:
+    default:
+      - "post_runfolder"
+      - "rsync_to_destination"
+      - "post_rsync_success"
+      - "post_rsync_failure"
