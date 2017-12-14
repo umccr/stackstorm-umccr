@@ -2,11 +2,11 @@
 name: "convert_bcl2fastq"
 pack: "umccr"
 description: "Start the conversion of a runfolder."
-action_ref: "umccr.bcl2fastq_conversion"
+action_ref: "umccr.bcl2fastq_start"
 ack:
   format: "Converting converting..."
   append_url: true
 formats:
-  - display: "convert runfolder <runfolder_name>"
+  - display: "convert runfolder <runfolder-path>"
     representation:
-      - "convert runfolder {{runfolder_name}}"
+      - "convert runfolder {{runfolder}}( into {{output_dir='/storage/shared/bcl2fastq_output'}})?"

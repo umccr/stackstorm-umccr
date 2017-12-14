@@ -1,0 +1,33 @@
+---
+name: bcl2fastq_start
+pack: umccr
+description: Action to execute arbitrary linux command remotely.
+enabled: true
+entry_point: ''
+parameters:
+  runfolder:
+    required: true
+    type: string
+    description: The runfolder (full path) to convert
+  output_dir:
+    required: true
+    type: string
+    description: The output directory of the conversion
+  hosts:
+    immutable: true
+    default: 172.19.0.1
+  port:
+    immutable: true
+    default: 2222
+  username:
+    immutable: true
+    default: 'limsadmin'
+  private_key:
+    immutable: true
+    default: '/home/stanley/.ssh/stanley_rsa'
+  cmd:
+    immutable: true
+    default: "/opt/arteria/run-bcl2fastq.sh {{runfolder}} {{output_dir}} {{st2kv.system.api.key.webhook}}"
+  sudo:
+    immutable: true
+runner_type: "remote-shell-cmd"
