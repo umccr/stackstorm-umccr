@@ -31,3 +31,8 @@ parameters:
   sudo:
     immutable: true
 runner_type: "remote-shell-cmd"
+notify:
+  on-complete:
+    message: "bcl2fastq conversion workflow completed!"
+    routes:
+      - "hubot"
