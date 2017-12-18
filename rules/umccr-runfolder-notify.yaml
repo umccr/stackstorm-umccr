@@ -13,4 +13,4 @@ action:
   ref: chatops.post_message
   parameters:
     channel: '#arteria-dev'
-    message: 'New runfolder is ready: {{trigger.runfolder_name}}'
+    message: 'New runfolder is ready: {{trigger.runfolder}}'
