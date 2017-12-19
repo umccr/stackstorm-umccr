@@ -1,0 +1,19 @@
+---
+name: action_notify_slack_forwarder
+pack: umccr
+description: 'Notifies UMCCR slack of action notifications'
+enabled: false
+
+trigger:
+  type: core.st2.generic.notifytrigger
+
+criteria:
+  trigger.route:
+    pattern: umccr_slack
+    type: equals
+
+action:
+  ref: chatops.post_message
+  parameters:
+    message: '{{trigger.message}}'
+    channel: '#arteria-dev'

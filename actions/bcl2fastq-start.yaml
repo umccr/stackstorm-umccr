@@ -2,8 +2,13 @@
 name: bcl2fastq_start
 pack: umccr
 description: Action to execute arbitrary linux command remotely.
-enabled: true
+enabled: false
 entry_point: ''
+notify:
+  on-complete:
+    message: "bcl2fastq conversion submitted!"
+    routes:
+      - "umccr_slack"
 parameters:
   runfolder:
     required: true
@@ -27,12 +32,7 @@ parameters:
     default: '/home/stanley/.ssh/stanley_rsa'
   cmd:
     immutable: true
-    default: "/opt/arteria/run-bcl2fastq.sh {{runfolder}} {{output_dir}} {{st2kv.system.api.key.webhook}}"
+    default: "nohup /opt/arteria/run-bcl2fastq.sh -R {{runfolder}} -o {{output_dir}} -k {{st2kv.system.api.key.webhook}} &"
   sudo:
     immutable: true
 runner_type: "remote-shell-cmd"
-notify:
-  on-complete:
-    message: "bcl2fastq conversion workflow completed!"
-    routes:
-      - "hubot"
