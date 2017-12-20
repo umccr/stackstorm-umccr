@@ -4,7 +4,7 @@ pack: "umccr"
 description: "Start the conversion of a runfolder."
 action_ref: "umccr.bcl2fastq_start"
 ack:
-  format: "Starting conversion of {{runfolder}}"
+  format: "Starting conversion of {{execution.parameters.runfolder}}"
   append_url: false
 formats:
   - display: "convert runfolder <runfolder-path>"
