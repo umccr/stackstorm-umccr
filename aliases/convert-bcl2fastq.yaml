@@ -9,4 +9,4 @@ ack:
 formats:
   - display: "convert runfolder <runfolder-path>"
     representation:
-      - "convert runfolder {{runfolder}}( into {{output_dir='/storage/shared/bcl2fastq_output'}})?"
+      - "convert runfolder {{runfolder}}( into {{output_dir}})?( with parameters {{extra_params}})?"
