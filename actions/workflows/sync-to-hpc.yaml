@@ -6,7 +6,10 @@ workflows:
   main:
     type: direct
     input:
-      - source_path
+      - source_raw_path
+      - source_fastq_path
+      - runfolder
+      - excludes
       - dest_host
       - dest_path
       - rsync_ssh_user
@@ -19,7 +22,7 @@ workflows:
         action: chatops.post_message
         input:
           channel: "#arteria-dev"
-          message: "Starting rsync of <% $.source_path %>"
+          message: "Starting rsync of <% $.runfolder %>"
         on-success:
           - rsync_to_destination
 
@@ -28,7 +31,7 @@ workflows:
       rsync_to_destination:
         action: core.remote
         input:
-          cmd: 'rsync -avzh <% $.source_path %> -e "ssh" <% $.rsync_ssh_user %>@<% $.dest_host %>:<% $.dest_path %>'
+          cmd: 'rsync -avzh <%$.excludes%> <% $.source_raw_path %>/<% $.runfolder %>/ <% $.source_fastq_path %>/<% $.runfolder %>/ -e "ssh" <% $.rsync_ssh_user %>@<% $.dest_host %>:<% $.dest_path %>/<% $.runfolder %>'
           hosts: 172.19.0.1
           port: 2222
           username: "limsadmin"
@@ -46,10 +49,10 @@ workflows:
         action: chatops.post_message
         input:
           channel: "#arteria-dev"
-          message: "Runfolder <% $.source_path %> successfuly synced to <% $.dest_host %>"
+          message: "Runfolder <% $.runfolder %> successfuly synced to <% $.dest_host %>"
 
       post_rsync_failure:
         action: chatops.post_message
         input:
           channel: "#arteria-dev"
-          message: "Runfolder <% $.source_path %> sync failed!"
+          message: "Runfolder <% $.runfolder %> sync failed!"

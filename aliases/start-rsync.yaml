@@ -4,9 +4,9 @@ pack: "umccr"
 description: "Start the rsync of a runfolder."
 action_ref: "umccr.sync2hpc"
 ack:
-  format: "Let's get to work..."
+  format: "Transferring data..."
   append_url: true
 formats:
-  - display: "move conversion output <runfolder>"
+  - display: "sync <runfolder>"
     representation:
-      - "move conversion output( from)? {{source_path}}(to {{dest_path='/data/cephfs/punim0010/data/arteria_test'}} on {{dest_host=spartan.hpc.unimelb.edu.au}} as {{rsync_ssh_user=brainstorm}})?"
+      - "sync {{runfolder}}(to {{dest_host}})?"

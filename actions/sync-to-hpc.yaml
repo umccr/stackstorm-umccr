@@ -6,18 +6,36 @@ enabled: false
 runner_type: mistral-v2
 entry_point: workflows/sync-to-hpc.yaml
 parameters:
-  source_path:
+  source_raw_path:
+    required: false
+    type: string
+    default: "/mnt/MDHS-Clinical/Genomics/Baymax/"
+  source_fastq_path:
+    required: false
+    type: string
+    default: "/storage/shared/bcl2fastq_output/"
+  runfolder:
     required: true
     type: string
+  excludes:
+    required: false
+    type: string
+    default: "--exclude Data --exclude Thumbnail_Images"
   dest_host:
-    required: true
+    required: false
     type: string
+    #default: "spartan.hpc.unimelb.edu.au"
+    default: "raijin5.nci.org.au"
   dest_path:
-    required: true
+    required: false
     type: string
+    #default: "/data/cephfs/punim0010/data/Pipeline/Fastq/"
+    default: "/g/data/gx8/data/Pipeline/Fastq/"
   rsync_ssh_user:
-    required: true
+    required: false
     type: string
+    #default: "brainstorm"
+    default: "rg3930"
   skip_notify:
     default:
       - "post_runfolder"
