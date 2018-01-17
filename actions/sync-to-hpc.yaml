@@ -1,37 +1,44 @@
 ---
 name: sync2hpc
 pack: umccr
-description: Data sync to HPC workflow
+description: Sync data to the HPC
 enabled: false
 runner_type: mistral-v2
 entry_point: workflows/sync-to-hpc.yaml
+notify:
+  on-complete:
+    message: "Overwrite to silence the default notification route."
+    routes:
+      - "foo"
 parameters:
-  source_raw_path:
-    required: false
-    type: string
-    default: "/mnt/MDHS-Clinical/Genomics/Baymax/"
-  source_fastq_path:
-    required: false
-    type: string
-    default: "/storage/shared/bcl2fastq_output/"
   runfolder:
+    description: "The name (not full path) of the runfolder to sync."
     required: true
     type: string
+  source_path:
+    description: "The path to sync. Should end in (and include!) the runfolder name."
+    required: false
+    type: string
+    default: "/storage/shared/raw/Baymax/{{runfolder}}/ /storage/shared/bcl2fastq_output/{{runfolder}}/"
   excludes:
+    description: "exclude option(s) to provide to the rsync command."
     required: false
     type: string
     default: "--exclude Data --exclude Thumbnail_Images"
   dest_host:
+    description: "The host to sync to"
     required: false
     type: string
     #default: "spartan.hpc.unimelb.edu.au"
     default: "raijin5.nci.org.au"
   dest_path:
+    description: "Base path for pipeline output on the respective destination host. A sub-dir structure according to UMCCR definitions is expected."
     required: false
     type: string
-    #default: "/data/cephfs/punim0010/data/Pipeline/Fastq/"
-    default: "/g/data/gx8/data/Pipeline/Fastq/"
+    #default: "/data/cephfs/punim0010/data/Pipeline/"
+    default: "/g/data/gx8/data/Pipeline/"
   rsync_ssh_user:
+    description: "The ssh user to run the rsync command with."
     required: false
     type: string
     #default: "brainstorm"

@@ -1,12 +1,12 @@
 ---
-name: "start_rsync"
+name: "sync2nci"
 pack: "umccr"
 description: "Start the rsync of a runfolder."
 action_ref: "umccr.sync2hpc"
 ack:
-  format: "Transferring data..."
+  format: "Transferring data to NCI..."
   append_url: true
 formats:
-  - display: "sync <runfolder>"
+  - display: "sync <runfolder> to NCI"
     representation:
-      - "sync {{runfolder}}(to {{dest_host}})?"
+      - "sync {{runfolder}} to NCI"

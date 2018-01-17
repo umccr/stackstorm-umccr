@@ -6,15 +6,14 @@ workflows:
   main:
     type: direct
     input:
-      - source_raw_path
-      - source_fastq_path
+      - source_path
       - runfolder
       - excludes
       - dest_host
       - dest_path
       - rsync_ssh_user
     output:
-      output_the_whole_workflow_context: <% $ %>
+      output_the_whole_workflow_context: "{{ _.state }}"
 
     tasks:
       # Notify of workflow start
@@ -22,7 +21,7 @@ workflows:
         action: chatops.post_message
         input:
           channel: "#arteria-dev"
-          message: "Starting rsync of <% $.runfolder %>"
+          message: "Starting rsync of *{{ _.runfolder }}*"
         on-success:
           - rsync_to_destination
 
@@ -31,7 +30,7 @@ workflows:
       rsync_to_destination:
         action: core.remote
         input:
-          cmd: 'rsync -avzh <%$.excludes%> <% $.source_raw_path %>/<% $.runfolder %>/ <% $.source_fastq_path %>/<% $.runfolder %>/ -e "ssh" <% $.rsync_ssh_user %>@<% $.dest_host %>:<% $.dest_path %>/<% $.runfolder %>'
+          cmd: 'rsync -avzh {{ _.excludes }} {{ _.source_path }} -e "ssh" {{ _.rsync_ssh_user }}@{{ _.dest_host }}:{{ _.dest_path }}/Fastq/{{ _.runfolder }}'
           hosts: 172.19.0.1
           port: 2222
           username: "limsadmin"
@@ -42,6 +41,7 @@ workflows:
           delay: 10
         on-success:
           - post_rsync_success
+          - create_ready_link
         on-error:
           - post_rsync_failure
 
@@ -49,10 +49,68 @@ workflows:
         action: chatops.post_message
         input:
           channel: "#arteria-dev"
-          message: "Runfolder <% $.runfolder %> successfuly synced to <% $.dest_host %>"
+          message: "Runfolder *{{ _.runfolder }}* successfuly synced to {{ _.dest_host }}"
+        publish: # publish a successfull state
+          state: "0"
 
       post_rsync_failure:
         action: chatops.post_message
         input:
           channel: "#arteria-dev"
-          message: "Runfolder <% $.runfolder %> sync failed!"
+          message: "ERROR: Runfolder *{{ _.runfolder }}* sync failed!"
+        publish: # publish an unsuccessfull state, so the workflow is terminated here
+          state: "-1"
+
+
+      # create the symlink in the Ready folder as flag that the data in now in place and ready to be used
+      create_ready_link:
+        action: core.remote
+        input:
+          cmd: "ssh {{ _.rsync_ssh_user }}@{{ _.dest_host }} 'ln -sf {{ _.dest_path }}/Fastq/{{ _.runfolder }} {{ _.dest_path }}/Ready/{{ _.runfolder }}'"
+          hosts: 172.19.0.1
+          port: 2222
+          username: "limsadmin"
+          private_key: "/home/stanley/.ssh/stanley_rsa"
+          timeout: 43200
+        on-success:
+          - post_ready_link_success
+          - update_group: "{{ _.dest_host == 'spartan.hpc.unimelb.edu.au' }}"
+        on-error:
+          - post_ready_link_failure
+
+      post_ready_link_success:
+        action: chatops.post_message
+        input:
+          channel: "#arteria-dev"
+          message: "Runfolder *{{ _.runfolder }}* successfuly flagged as _ready_."
+        publish:
+          state: "0"
+
+      post_ready_link_failure:
+        action: chatops.post_message
+        input:
+          channel: "#arteria-dev"
+          message: "ERROR: Could not create symlink for *{{ _.runfolder }}*!"
+        publish:
+          state: "-1"
+
+
+      update_group:
+        action: core.remote
+        input:
+          cmd: "ssh {{ _.rsync_ssh_user }}@{{ _.dest_host }} 'chown -R :punim0010 {{ _.dest_path }}/Fastq/{{ _.runfolder }} {{ _.dest_path }}/Ready/{{ _.runfolder }}'"
+          hosts: 172.19.0.1
+          port: 2222
+          username: "limsadmin"
+          private_key: "/home/stanley/.ssh/stanley_rsa"
+          timeout: 43200
+        on-success:
+          - post_group_update_success
+
+      post_group_update_success:
+        action: chatops.post_message
+        input:
+          channel: "#arteria-dev"
+          message: "Successfully changed user group of *{{ _.runfolder }}* to _punim0010_"
+        publish:
+          state: "0"
