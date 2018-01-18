@@ -11,33 +11,38 @@ notify:
       - "umccr_slack"
 parameters:
   runfolder:
+    description: "The name (not full path) of the runfolder to convert."
     required: true
     type: string
-    description: The runfolder (full path) to convert
   output_dir:
+    description: "The bcl2fastq output directory."
     required: true
     type: string
-    description: The output directory of the conversion
-    default: '/storage/shared/bcl2fastq_output'
+    default: '/storage/shared/bcl2fastq_output/{{runfolder}}'
   extra_params:
+    description: "Additional bcl2fastq parameters."
     required: false
     type: string
-    description: Additional bcl2fastq parameters.
   hosts:
+    description: "The remote host where to run the remote-shell-cmd."
     immutable: true
     default: 172.19.0.1
   port:
+    description: "The ssh port for connecting to the remote host."
     immutable: true
     default: 2222
   username:
+    description: "The ssh user name."
     immutable: true
     default: 'limsadmin'
   private_key:
+    description: "The private key to use for ssh."
     immutable: true
     default: '/home/stanley/.ssh/stanley_rsa'
   cmd:
+    description: "The command to run on the remote host."
     immutable: true
-    default: "nohup /opt/arteria/run-bcl2fastq.sh -R {{runfolder}} -o {{output_dir}} -k {{st2kv.system.api.key.webhook}} {% if extra_params %}{{extra_params}}{% endif %} &"
+    default: "nohup /opt/arteria/run-bcl2fastq.sh -R /storage/shared/raw/Baymax/{{runfolder}} -n {{runfolder}} -o {{output_dir}} -k {{st2kv.system.api.key.webhook}} {% if extra_params %}{{extra_params}}{% endif %} &"
   sudo:
     immutable: true
 runner_type: "remote-shell-cmd"

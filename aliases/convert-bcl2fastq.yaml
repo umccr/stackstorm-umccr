@@ -7,6 +7,6 @@ ack:
   format: "Starting conversion of {{execution.parameters.runfolder}}"
   append_url: false
 formats:
-  - display: "convert runfolder <runfolder-path>"
+  - display: "convert runfolder <runfolder name>"
     representation:
       - "convert runfolder {{runfolder}}( into {{output_dir}})?( with parameters {{extra_params}})?"
