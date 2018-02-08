@@ -1,0 +1,19 @@
+---
+name: on_cluster_job_success
+pack: umccr
+description: Rule to act on umccr.cluster.job trigger instances
+enabled: false
+
+trigger:
+  type: umccr.cluster.job
+
+criteria:
+  trigger.status:
+    pattern: "done"
+    type: equals
+
+action:
+  ref: chatops.post_message
+  parameters:
+    message: 'Cluster job {{trigger.job_name}} (ID: {{trigger.job_id}}) succeeded!'
+    channel: '#arteria-dev'

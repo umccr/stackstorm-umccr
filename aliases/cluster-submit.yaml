@@ -1,0 +1,12 @@
+---
+name: "cluster_submit"
+pack: "umccr"
+description: "Submit a job to the cluster."
+action_ref: "umccr.cluster_submit"
+ack:
+  format: "Submitting cluster job {{execution.parameters.job_name}}"
+  append_url: false
+formats:
+  - display: "submit cluster job <job_name>"
+    representation:
+      - "submit cluster job {{job_name}}"

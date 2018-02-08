@@ -1,0 +1,19 @@
+---
+name: on_cluster_job_failure
+pack: umccr
+description: Rule to act on umccr.cluster.job trigger instances
+enabled: false
+
+trigger:
+  type: umccr.cluster.job
+
+criteria:
+  trigger.status:
+    pattern: "error"
+    type: equals
+
+action:
+  ref: chatops.post_message
+  parameters:
+    message: 'Cluster job {{trigger.job_name}} (ID: {{trigger.job_id}}) failed!'
+    channel: '#arteria-dev'

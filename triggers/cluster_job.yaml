@@ -1,0 +1,4 @@
+---
+name: cluster.job
+pack: umccr
+description: UMCCR trigger used to notify of cluster job execution.

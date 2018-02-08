@@ -1,0 +1,39 @@
+---
+name: cluster_submit
+pack: umccr
+description: Action to submit a cluster job.
+enabled: false
+entry_point: ''
+notify:
+  on-complete:
+    message: "Cluster job {{action_parameters.job_name}} submitted!"
+    routes:
+      - "umccr_slack"
+parameters:
+  job_name:
+    description: "The name of the job to submit."
+    required: true
+    type: string
+  hosts:
+    description: "The remote host where to run the remote-shell-cmd."
+    immutable: true
+    default: 172.19.0.1
+  port:
+    description: "The ssh port for connecting to the remote host."
+    immutable: true
+    default: 2222
+  username:
+    description: "The ssh user name."
+    immutable: true
+    default: 'limsadmin'
+  private_key:
+    description: "The private key to use for ssh."
+    immutable: true
+    default: '/home/stanley/.ssh/stanley_rsa'
+  cmd:
+    description: "The command to run on the remote host."
+    immutable: true
+    default: "ssh rg3930@raijin5.nci.org.au \"bash --login -c '/g/data/gx8/tmp/qsub-automation-test/submit.sh {{job_name}} {{st2kv.system.api.key.webhook}}'\""
+  sudo:
+    immutable: true
+runner_type: "remote-shell-cmd"
