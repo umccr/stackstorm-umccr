@@ -6,7 +6,7 @@ enabled: false
 entry_point: ''
 notify:
   on-complete:
-    message: "bcl2fastq conversion submitted!"
+    message: "bcl2fastq conversion of {{action_parameters.runfolder}} submitted!"
     routes:
       - "umccr_slack"
 parameters:

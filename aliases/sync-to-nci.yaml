@@ -4,7 +4,7 @@ pack: "umccr"
 description: "Start the rsync of a runfolder."
 action_ref: "umccr.sync2hpc"
 ack:
-  format: "Transferring data to NCI..."
+  format: "Transferring {{execution.parameters.runfolder}} to NCI..."
   append_url: true
 formats:
   - display: "sync <runfolder> to NCI"
