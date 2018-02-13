@@ -10,7 +10,7 @@ trigger:
 criteria:  {}
 
 action:
-  ref: chatops.post_message
+  ref: umccr.samplesheet_check
   parameters:
-    channel: '#arteria-dev'
-    message: 'New runfolder *{{trigger.runfolder_name}}* is ready in {{trigger.runfolder}}'
+    runfolder: "{{trigger.runfolder}}"
+    runfolder_name: "{{trigger.runfolder_name}}"

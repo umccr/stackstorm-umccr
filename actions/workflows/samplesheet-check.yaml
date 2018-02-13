@@ -1,0 +1,54 @@
+version: "2.0" # mistral version
+name: umccr.samplesheet_check
+description: "Check the SampleSheet.csv of a runfolder, if we can handle it automatically."
+
+workflows:
+  main:
+    type: direct
+    input:
+      - runfolder
+      - runfolder_name
+    output:
+      output_the_whole_workflow_context: "{{ _.state }}"
+
+    tasks:
+      # Notify of new runfolder
+      notify_new_runfolder:
+        action: chatops.post_message
+        input:
+          channel: "#arteria-dev"
+          message: 'New runfolder *{{_.runfolder_name}}* is ready in {{_.runfolder}}.'
+        on-success:
+          - samplesheet_check
+
+
+      # sync the data to the HPC
+      samplesheet_check:
+        action: core.remote
+        input:
+          cmd: 'python /opt/arteria/runfolder-samplesheet-check.py /storage/shared/raw/Baymax/{{_.runfolder_name}}/SampleSheet.csv'
+          hosts: 172.19.0.1
+          port: 2222
+          username: "limsadmin"
+          private_key: "/home/stanley/.ssh/stanley_rsa"
+          timeout: 43200
+        on-success:
+          - post_check_success
+        on-error:
+          - post_check_failure
+
+      post_check_success:
+        action: chatops.post_message
+        input:
+          channel: "#arteria-dev"
+          message: "Sample sheet check for runfolder {{_.runfolder_name}} succeeded. Automatic conversion possible."
+        publish: # publish a successfull state
+          state: "0"
+
+      post_check_failure:
+        action: chatops.post_message
+        input:
+          channel: "#arteria-dev"
+          message: "ERROR: Sample sheet check for runfolder {{_.runfolder_name}} failed. Automatic conversion not possible."
+        publish: # publish an unsuccessfull state, so the workflow is terminated here
+          state: "-1"
