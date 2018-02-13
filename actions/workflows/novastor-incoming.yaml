@@ -1,0 +1,81 @@
+version: "2.0" # mistral version
+name: umccr.novastor_incoming
+description: "Run the incoming pipeline, from runfolder detection to bcl2fastq conversion."
+
+workflows:
+  main:
+    type: direct
+    input:
+      - runfolder
+      - runfolder_name
+    output:
+      exit_code: "{{ _.state }}"
+
+    tasks:
+
+      # Start: notify users of a new runfolder
+
+      post_new_runfolder:
+        action: chatops.post_message
+        input:
+          channel: "#arteria-dev"
+          message: "New runfolder *{{ _.runfolder_name }}* ready in {{ _.runfolder }}."
+        on-success:
+          - samplesheet_check
+
+      # Then check the SampleSheet.csv file whether we can directly use it for the bcl2fastq conversion
+
+      samplesheet_check:
+        action: umccr.samplesheet_check
+        input:
+          runfolder_name: "{{ _.runfolder_name }}"
+        on-success:
+          - post_check_success
+          - bcl2fastq_start
+        on-error:
+          - post_check_failure
+
+      post_check_success:
+        action: chatops.post_message
+        input:
+          channel: "#arteria-dev"
+          message: "Sample sheet check for runfolder {{ _.runfolder_name }} succeeded. Proceeding to bcl2fastq conversion."
+        publish:
+          state: "0"
+
+      post_check_failure:
+        action: chatops.post_message
+        input:
+          channel: "#arteria-dev"
+          message: "ERROR: Sample sheet check for runfolder {{ _.runfolder_name }} failed. Automatic conversion not possible."
+        publish:
+          state: "-1"
+
+      # Next: submit the bcl2fastq conversion job
+
+      bcl2fastq_start:
+        action: umccr.bcl2fastq_start
+        input:
+          runfolder: "{{ _.runfolder_name }}"
+        on-success:
+          - post_bcl2fastq_start_success
+        on-error:
+          - post_bcl2fastq_start_failure
+
+      post_bcl2fastq_start_success:
+        action: chatops.post_message
+        input:
+          channel: "#arteria-dev"
+          message: "Runfolder *{{ _.runfolder_name }}* successfully submitted for conversion with bcl2fastq."
+        publish:
+          state: "0"
+
+      post_bcl2fastq_start_failure:
+        action: chatops.post_message
+        input:
+          channel: "#arteria-dev"
+          message: "ERROR: Could not submit runfolder *{{ _.runfolder_name }}* for conversion."
+        publish:
+          state: "-1"
+
+      # Further steps will be triggered once the conversion has finished

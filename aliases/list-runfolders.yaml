@@ -10,9 +10,9 @@ result:
   format: |
     The following runfolders where detected:
     {% for folder in execution.result.body.runfolders -%}
-        -> Folder: *{{folder.path}}* with state: *{{folder.state}}*
+        -> Folder: *{{ folder.path }}* with state: *{{ folder.state }}*
     {%+ endfor %}
 formats:
   - display: "(fetch|get) runfolder status [from <url>]"
     representation:
-      - "(fetch|get) runfolder status( from)? {{url='http://172.19.0.1:8888/api/1.0/runfolders?state=*'}}( now)?[.|!]?"
+      - "(fetch|get) runfolder status( from)? {{ url='http://172.19.0.1:8888/api/1.0/runfolders?state=*' }}( now)?[.|!]?"

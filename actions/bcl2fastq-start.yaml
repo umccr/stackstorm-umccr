@@ -3,14 +3,10 @@ name: bcl2fastq_start
 pack: umccr
 description: Action to start the bcl2fastq conversion.
 enabled: false
+runner_type: "remote-shell-cmd"
 entry_point: ''
-notify:
-  on-complete:
-    message: "bcl2fastq conversion submitted!"
-    routes:
-      - "umccr_slack"
 parameters:
-  runfolder:
+  runfolder_name:
     description: "The name (not full path) of the runfolder to convert."
     required: true
     type: string
@@ -18,7 +14,7 @@ parameters:
     description: "The bcl2fastq output directory."
     required: true
     type: string
-    default: '/storage/shared/bcl2fastq_output/{{runfolder}}'
+    default: '/storage/shared/bcl2fastq_output/{{ runfolder_name }}'
   extra_params:
     description: "Additional bcl2fastq parameters."
     required: false
@@ -42,7 +38,6 @@ parameters:
   cmd:
     description: "The command to run on the remote host."
     immutable: true
-    default: "nohup /opt/arteria/run-bcl2fastq.sh -R /storage/shared/raw/Baymax/{{runfolder}} -n {{runfolder}} -o {{output_dir}} -k {{st2kv.system.api.key.webhook}} {% if extra_params %}{{extra_params}}{% endif %} &"
+    default: "nohup /opt/arteria/run-bcl2fastq.sh -R /storage/shared/raw/Baymax/{{ runfolder_name }} -n {{ runfolder_name }} -o {{ output_dir }} -k {{ st2kv.system.api.key.webhook }} {% if extra_params %}{{ extra_params }}{% endif %} &"
   sudo:
     immutable: true
-runner_type: "remote-shell-cmd"

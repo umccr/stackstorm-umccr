@@ -10,7 +10,7 @@ trigger:
 criteria:  {}
 
 action:
-  ref: umccr.samplesheet_check
+  ref: umccr.novastor_incoming
   parameters:
-    runfolder: "{{trigger.runfolder}}"
-    runfolder_name: "{{trigger.runfolder_name}}"
+    runfolder: "{{ trigger.runfolder }}"
+    runfolder_name: "{{ trigger.runfolder_name }}"

@@ -13,7 +13,6 @@ criteria:
     type: equals
 
 action:
-  ref: chatops.post_message
+  ref: umccr.sync2hpc
   parameters:
-    message: 'bcl2fastq conversion succeeded for runfolder {{trigger.runfolder}}!'
-    channel: '#arteria-dev'
+    runfolder_name: "{{ trigger.runfolder_name }}"

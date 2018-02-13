@@ -7,6 +7,6 @@ ack:
   format: "Transferring data to Spartan..."
   append_url: true
 formats:
-  - display: "sync <runfolder> to Spartan"
+  - display: "sync <runfolder name> to Spartan"
     representation:
-      - "sync {{runfolder}} to Spartan {{dest_host='spartan.hpc.unimelb.edu.au'}} {{dest_path='/data/cephfs/punim0010/data/Pipeline/'}} {{rsync_ssh_user='brainstorm'}}"
+      - "sync {{ runfolder_name }} to Spartan {{ dest_host='spartan.hpc.unimelb.edu.au' }} {{ dest_path='/data/cephfs/punim0010/data/Pipeline/' }} {{ rsync_ssh_user='brainstorm' }}"

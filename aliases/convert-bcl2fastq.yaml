@@ -4,9 +4,9 @@ pack: "umccr"
 description: "Start the conversion of a runfolder."
 action_ref: "umccr.bcl2fastq_start"
 ack:
-  format: "Starting conversion of {{execution.parameters.runfolder}}"
+  format: "Starting conversion of {{ execution.parameters.runfolder }}"
   append_url: false
 formats:
   - display: "convert runfolder <runfolder name>"
     representation:
-      - "convert runfolder {{runfolder}}( into {{output_dir}})?( with parameters {{extra_params}})?"
+      - "convert runfolder {{ runfolder }}( into {{ output_dir }})?( with parameters {{ extra_params }})?"

@@ -7,6 +7,6 @@ ack:
   format: "Transferring data to NCI..."
   append_url: true
 formats:
-  - display: "sync <runfolder> to NCI"
+  - display: "sync <runfolder name> to NCI"
     representation:
-      - "sync {{runfolder}} to NCI"
+      - "sync {{ runfolder_name }} to NCI"

@@ -15,5 +15,5 @@ criteria:
 action:
   ref: chatops.post_message
   parameters:
-    message: '{{trigger.message}}'
+    message: '{{ trigger.message }}'
     channel: '#arteria-dev'

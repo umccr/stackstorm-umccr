@@ -11,7 +11,7 @@ notify:
     routes:
       - "foo"
 parameters:
-  runfolder:
+  runfolder_name:
     description: "The name (not full path) of the runfolder to sync."
     required: true
     type: string
@@ -19,7 +19,7 @@ parameters:
     description: "The path to sync. Should end in (and include!) the runfolder name."
     required: false
     type: string
-    default: "/storage/shared/raw/Baymax/{{runfolder}}/ /storage/shared/bcl2fastq_output/{{runfolder}}/"
+    default: "/storage/shared/raw/Baymax/{{ runfolder_name }}/ /storage/shared/bcl2fastq_output/{{ runfolder_name }}/"
   excludes:
     description: "exclude option(s) to provide to the rsync command."
     required: false
