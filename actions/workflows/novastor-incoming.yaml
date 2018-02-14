@@ -56,7 +56,7 @@ workflows:
       bcl2fastq_start:
         action: umccr.bcl2fastq_start
         input:
-          runfolder: "{{ _.runfolder_name }}"
+          runfolder_name: "{{ _.runfolder_name }}"
         on-success:
           - post_bcl2fastq_start_success
         on-error:
