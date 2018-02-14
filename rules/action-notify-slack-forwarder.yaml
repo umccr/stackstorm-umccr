@@ -15,5 +15,5 @@ criteria:
 action:
   ref: chatops.post_message
   parameters:
-    message: '{{ trigger.message }}'
-    channel: '#arteria-dev'
+    message: "{{ trigger.message }}"
+    channel: "{{ st2kv.system.slack.channel }}"

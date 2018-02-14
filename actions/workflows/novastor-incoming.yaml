@@ -18,7 +18,7 @@ workflows:
       post_new_runfolder:
         action: chatops.post_message
         input:
-          channel: "#arteria-dev"
+          channel: "{{ st2kv.system.slack.channel }}"
           message: "New runfolder *{{ _.runfolder_name }}* ready in {{ _.runfolder }}."
         on-success:
           - samplesheet_check
@@ -38,7 +38,7 @@ workflows:
       post_check_success:
         action: chatops.post_message
         input:
-          channel: "#arteria-dev"
+          channel: "{{ st2kv.system.slack.channel }}"
           message: "Sample sheet check for runfolder {{ _.runfolder_name }} succeeded. Proceeding to bcl2fastq conversion."
         publish:
           state: "0"
@@ -46,7 +46,7 @@ workflows:
       post_check_failure:
         action: chatops.post_message
         input:
-          channel: "#arteria-dev"
+          channel: "{{ st2kv.system.slack.channel }}"
           message: "ERROR: Sample sheet check for runfolder {{ _.runfolder_name }} failed. Automatic conversion not possible."
         publish:
           state: "-1"
@@ -65,7 +65,7 @@ workflows:
       post_bcl2fastq_start_success:
         action: chatops.post_message
         input:
-          channel: "#arteria-dev"
+          channel: "{{ st2kv.system.slack.channel }}"
           message: "Runfolder *{{ _.runfolder_name }}* successfully submitted for conversion with bcl2fastq."
         publish:
           state: "0"
@@ -73,7 +73,7 @@ workflows:
       post_bcl2fastq_start_failure:
         action: chatops.post_message
         input:
-          channel: "#arteria-dev"
+          channel: "{{ st2kv.system.slack.channel }}"
           message: "ERROR: Could not submit runfolder *{{ _.runfolder_name }}* for conversion."
         publish:
           state: "-1"

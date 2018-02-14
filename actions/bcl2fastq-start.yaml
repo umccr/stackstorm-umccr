@@ -14,7 +14,7 @@ parameters:
     description: "The bcl2fastq output directory."
     required: true
     type: string
-    default: '/storage/shared/bcl2fastq_output/{{ runfolder_name }}'
+    default: "{{ st2kv.system.bcl2fastq.output.base.path }}/{{ runfolder_name }}"
   extra_params:
     description: "Additional bcl2fastq parameters."
     required: false
@@ -22,22 +22,22 @@ parameters:
   hosts:
     description: "The remote host where to run the remote-shell-cmd."
     immutable: true
-    default: 172.19.0.1
+    default: "{{ st2kv.system.novastor.ssh.host }}"
   port:
     description: "The ssh port for connecting to the remote host."
     immutable: true
-    default: 2222
+    default: "{{ st2kv.system.novastor.ssh.port }}"
   username:
     description: "The ssh user name."
     immutable: true
-    default: 'limsadmin'
+    default: "{{ st2kv.system.novastor.ssh.user }}"
   private_key:
     description: "The private key to use for ssh."
     immutable: true
-    default: '/home/stanley/.ssh/stanley_rsa'
+    default: "{{ st2kv.system.novastor.ssh.key.path }}"
   cmd:
     description: "The command to run on the remote host."
     immutable: true
-    default: "nohup /opt/arteria/run-bcl2fastq.sh -R /storage/shared/raw/Baymax/{{ runfolder_name }} -n {{ runfolder_name }} -o {{ output_dir }} -k {{ st2kv.system.api.key.webhook }} {% if extra_params %}{{ extra_params }}{% endif %} &"
+    default: "nohup {{ st2kv.system.bcl2fastq.run.script }} -R {{ st2kv.system.runfolder.base.path }}/{{ runfolder_name }} -n {{ runfolder_name }} -o {{ output_dir }} -k {{ st2kv.system.api.key.webhook }} {% if extra_params %}{{ extra_params }}{% endif %} &"
   sudo:
     immutable: true

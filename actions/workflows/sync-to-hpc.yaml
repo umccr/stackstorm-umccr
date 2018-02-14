@@ -20,7 +20,7 @@ workflows:
       post_runfolder:
         action: chatops.post_message
         input:
-          channel: "#arteria-dev"
+          channel: "{{ st2kv.system.slack.channel }}"
           message: "Starting rsync of *{{ _.runfolder_name }}*"
         on-success:
           - rsync_to_destination
@@ -31,10 +31,10 @@ workflows:
         action: core.remote
         input:
           cmd: 'rsync -avzh {{ _.excludes }} {{ _.source_path }} -e "ssh" {{ _.rsync_ssh_user }}@{{ _.dest_host }}:{{ _.dest_path }}/Fastq/{{ _.runfolder_name }}'
-          hosts: 172.19.0.1
-          port: 2222
-          username: "limsadmin"
-          private_key: "/home/stanley/.ssh/stanley_rsa"
+          hosts: "{{ st2kv.system.novastor.ssh.host }}"
+          port: "{{ st2kv.system.novastor.ssh.port }}"
+          username: "{{ st2kv.system.novastor.ssh.user }}"
+          private_key: "{{ st2kv.system.novastor.ssh.key.path }}"
           timeout: 43200
         retry: # retry the command 3 times with 10sec delay in case of error, then fail
           count: 3
@@ -48,7 +48,7 @@ workflows:
       post_rsync_success:
         action: chatops.post_message
         input:
-          channel: "#arteria-dev"
+          channel: "{{ st2kv.system.slack.channel }}"
           message: "Runfolder *{{ _.runfolder_name }}* successfuly synced to {{ _.dest_host }}"
         publish: # publish a successfull state
           state: "0"
@@ -56,7 +56,7 @@ workflows:
       post_rsync_failure:
         action: chatops.post_message
         input:
-          channel: "#arteria-dev"
+          channel: "{{ st2kv.system.slack.channel }}"
           message: "ERROR: Runfolder *{{ _.runfolder_name }}* sync failed!"
         publish: # publish an unsuccessfull state, so the workflow is terminated here
           state: "-1"
@@ -67,10 +67,10 @@ workflows:
         action: core.remote
         input:
           cmd: "ssh {{ _.rsync_ssh_user }}@{{ _.dest_host }} 'ln -sf {{ _.dest_path }}/Fastq/{{ _.runfolder_name }} {{ _.dest_path }}/Ready/{{ _.runfolder_name }}'"
-          hosts: 172.19.0.1
-          port: 2222
-          username: "limsadmin"
-          private_key: "/home/stanley/.ssh/stanley_rsa"
+          hosts: "{{ st2kv.system.novastor.ssh.host }}"
+          port: "{{ st2kv.system.novastor.ssh.port }}"
+          username: "{{ st2kv.system.novastor.ssh.user }}"
+          private_key: "{{ st2kv.system.novastor.ssh.key.path }}"
           timeout: 43200
         on-success:
           - post_ready_link_success
@@ -81,7 +81,7 @@ workflows:
       post_ready_link_success:
         action: chatops.post_message
         input:
-          channel: "#arteria-dev"
+          channel: "{{ st2kv.system.slack.channel }}"
           message: "Runfolder *{{ _.runfolder_name }}* successfuly flagged as _ready_."
         publish:
           state: "0"
@@ -89,7 +89,7 @@ workflows:
       post_ready_link_failure:
         action: chatops.post_message
         input:
-          channel: "#arteria-dev"
+          channel: "{{ st2kv.system.slack.channel }}"
           message: "ERROR: Could not create symlink for *{{ _.runfolder_name }}*!"
         publish:
           state: "-1"
@@ -99,10 +99,10 @@ workflows:
         action: core.remote
         input:
           cmd: "ssh {{ _.rsync_ssh_user }}@{{ _.dest_host }} 'chown -R :punim0010 {{ _.dest_path }}/Fastq/{{ _.runfolder_name }} {{ _.dest_path }}/Ready/{{ _.runfolder_name }}'"
-          hosts: 172.19.0.1
-          port: 2222
-          username: "limsadmin"
-          private_key: "/home/stanley/.ssh/stanley_rsa"
+          hosts: "{{ st2kv.system.novastor.ssh.host }}"
+          port: "{{ st2kv.system.novastor.ssh.port }}"
+          username: "{{ st2kv.system.novastor.ssh.user }}"
+          private_key: "{{ st2kv.system.novastor.ssh.key.path }}"
           timeout: 43200
         on-success:
           - post_group_update_success
@@ -110,7 +110,7 @@ workflows:
       post_group_update_success:
         action: chatops.post_message
         input:
-          channel: "#arteria-dev"
+          channel: "{{ st2kv.system.slack.channel }}"
           message: "Successfully changed user group of *{{ _.runfolder_name }}* to _punim0010_"
         publish:
           state: "0"
