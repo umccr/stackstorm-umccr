@@ -30,15 +30,15 @@ workflows:
       rsync_to_destination:
         action: core.remote
         input:
-          cmd: 'rsync -avzh {{ _.excludes }} {{ _.source_path }} -e "ssh" {{ _.rsync_ssh_user }}@{{ _.dest_host }}:{{ _.dest_path }}/Fastq/{{ _.runfolder_name }}'
+          cmd: 'rsync -avzh --append-verify {{ _.excludes }} {{ _.source_path }} -e "ssh" {{ _.rsync_ssh_user }}@{{ _.dest_host }}:{{ _.dest_path }}/Fastq/{{ _.runfolder_name }}'
           hosts: "{{ st2kv.system.novastor.ssh.host }}"
           port: "{{ st2kv.system.novastor.ssh.port }}"
           username: "{{ st2kv.system.novastor.ssh.user }}"
           private_key: "{{ st2kv.system.novastor.ssh.key.path }}"
-          timeout: 43200
-        retry: # retry the command 3 times with 10sec delay in case of error, then fail
-          count: 3
-          delay: 10
+          timeout: 7200 # 2 hour timeout (to avoid long stale connections)
+        retry: # retry the command 10 times with 30sec delay in case of error, then fail
+          count: 10
+          delay: 30
         on-success:
           - post_rsync_success
           - create_ready_link
