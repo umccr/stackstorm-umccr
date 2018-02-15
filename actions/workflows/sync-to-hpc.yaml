@@ -35,9 +35,9 @@ workflows:
           port: "{{ st2kv.system.novastor.ssh.port }}"
           username: "{{ st2kv.system.novastor.ssh.user }}"
           private_key: "{{ st2kv.system.novastor.ssh.key.path }}"
-          timeout: 7200 # 2 hour timeout (to avoid long stale connections)
-        retry: # retry the command 10 times with 30sec delay in case of error, then fail
-          count: 10
+          timeout: 21600 # 6 hour timeout
+        retry: # retry the command 3 times with 30sec delay in case of error, then fail
+          count: 3
           delay: 30
         on-success:
           - post_rsync_success

@@ -29,20 +29,14 @@ parameters:
     description: "The host to sync to"
     required: false
     type: string
-    default: "{{ st2kv.system.hpc.host }}"
+    default: "{{ st2kv.system.hpc.copy.host }}"
   dest_path:
     description: "Base path for pipeline output on the respective destination host. A sub-dir structure according to UMCCR definitions is expected."
     required: false
     type: string
-    default: "{{ st2kv.system.pipeline.data.base.path }}/"
+    default: "{{ st2kv.system.pipeline.data.base.path }}"
   rsync_ssh_user:
     description: "The ssh user to run the rsync command with."
     required: false
     type: string
-    default: "{{ st2kv.system.hpc.user }}"
-  skip_notify:
-    default:
-      - "post_runfolder"
-      - "rsync_to_destination"
-      - "post_rsync_success"
-      - "post_rsync_failure"
+    default: "{{ st2kv.system.hpc.copy.user }}"
