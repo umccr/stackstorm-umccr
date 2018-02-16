@@ -19,7 +19,7 @@ workflows:
         action: chatops.post_message
         input:
           channel: "{{ st2kv.system.slack.channel }}"
-          message: "New runfolder *{{ _.runfolder_name }}* ready in {{ _.runfolder }}."
+          message: "New runfolder *{{ _.runfolder_name }}* ready."
         on-success:
           - samplesheet_check
 
@@ -39,7 +39,7 @@ workflows:
         action: chatops.post_message
         input:
           channel: "{{ st2kv.system.slack.channel }}"
-          message: "Sample sheet check for runfolder {{ _.runfolder_name }} succeeded. Proceeding to bcl2fastq conversion."
+          message: "Sample sheet check for runfolder *{{ _.runfolder_name }}* succeeded. Proceeding to bcl2fastq conversion."
         publish:
           state: "0"
 
@@ -47,7 +47,7 @@ workflows:
         action: chatops.post_message
         input:
           channel: "{{ st2kv.system.slack.channel }}"
-          message: "ERROR: Sample sheet check for runfolder {{ _.runfolder_name }} failed. Automatic conversion not possible."
+          message: "ERROR: Sample sheet check for runfolder *{{ _.runfolder_name }}* failed. Automatic conversion not possible."
         publish:
           state: "-1"
 

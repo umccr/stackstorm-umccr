@@ -8,6 +8,8 @@ workflows:
     input:
       - source_path
       - runfolder_name
+      - runfolder_base_path
+      - bcl2fastq_output_base_path
       - excludes
       - dest_host
       - dest_path
@@ -15,15 +17,89 @@ workflows:
     output:
       output_the_whole_workflow_context: "{{ _.state }}"
 
+
+    # TODO: review these points:
+    # TODO: the workflow does not know of any state, multiple submission of the workflow for the same data is not handled properly
+    # TODO: exclusion directories are hatd coded in the workflow, could possibly be moved into st2kv store
+    # TODO: workflow now depends on Slack posts, perhaps we should change that so posts can't fail the workflow?
+    # TODO: Some Slack posts carry combined statements (e.g. end of one task + start of another task), this could be split for clarity
+
+
     tasks:
       # Notify of workflow start
       post_runfolder:
         action: chatops.post_message
         input:
           channel: "{{ st2kv.system.slack.channel }}"
-          message: "Starting rsync of *{{ _.runfolder_name }}*"
+          message: "Conversion for runfolder *{{ _.runfolder_name }}* complete. Creating checksums."
         on-success:
+          - create_runfolder_checksums
+
+
+      # create the checksums for raw runfolder data (except the documented exclusions)
+      create_runfolder_checksums:
+        action: core.remote
+        input:
+          cmd: "cd {{ _.runfolder_base_path }}/{{ _.runfolder_name }} && find . -not \\( -path ./Thumbnail_Images -prune \\) -not \\( -path ./Data -prune \\) -not \\( -path ./runfolder.md5 -prune \\) -type f -exec md5sum '{}' \\; > ./runfolder.md5"
+          hosts: "{{ st2kv.system.novastor.ssh.host }}"
+          port: 2222
+          username: "{{ st2kv.system.novastor.ssh.user }}"
+          private_key: "{{ st2kv.system.novastor.ssh.key.path }}"
+          timeout: 1800 # 30 min timeout
+        on-success:
+          - post_runfolder_checksum_success
+          - create_fastq_checksums
+        on-error:
+          - post_runfolder_checksum_failure
+
+      post_runfolder_checksum_success:
+        action: chatops.post_message
+        input:
+          channel: "{{ st2kv.system.slack.channel }}"
+          message: "Checksums for runfolder *{{ _.runfolder_name }}* successfuly created! Creating checksums for FASTQs."
+        publish:
+          state: "0"
+
+      post_runfolder_checksum_failure:
+        action: chatops.post_message
+        input:
+          channel: "{{ st2kv.system.slack.channel }}"
+          message: "ERROR: Checksums for runfolder *{{ _.runfolder_name }}* failed!"
+        publish:
+          state: "-1"
+
+
+      # create the checksums for the bcl2fastq output
+      create_fastq_checksums:
+        action: core.remote
+        input:
+          cmd: "cd {{ _.bcl2fastq_output_base_path }}/{{ _.runfolder_name }} && find . -not \\( -path ./bcl2fastq.md5 -prune \\) -type f -exec md5sum '{}' \\; > ./bcl2fastq.md5"
+          hosts: "{{ st2kv.system.novastor.ssh.host }}"
+          port: 2222
+          username: "{{ st2kv.system.novastor.ssh.user }}"
+          private_key: "{{ st2kv.system.novastor.ssh.key.path }}"
+          timeout: 21600 # 6 hour timeout
+        on-success:
+          - post_fastq_success
           - rsync_to_destination
+        on-error:
+          - post_fastq_failure
+
+      post_fastq_success:
+        action: chatops.post_message
+        input:
+          channel: "{{ st2kv.system.slack.channel }}"
+          message: "Checksums for FASTQs of *{{ _.runfolder_name }}* successfuly created! Starting data sync to HPC."
+        publish:
+          state: "0"
+
+      post_fastq_failure:
+        action: chatops.post_message
+        input:
+          channel: "{{ st2kv.system.slack.channel }}"
+          message: "ERROR: Checksums for FASTQs of *{{ _.runfolder_name }}* failed!"
+        publish:
+          state: "-1"
 
 
       # sync the data to the HPC
@@ -32,7 +108,7 @@ workflows:
         input:
           cmd: 'rsync -avzh --append-verify {{ _.excludes }} {{ _.source_path }} -e "ssh" {{ _.rsync_ssh_user }}@{{ _.dest_host }}:{{ _.dest_path }}/Fastq/{{ _.runfolder_name }}'
           hosts: "{{ st2kv.system.novastor.ssh.host }}"
-          port: "{{ st2kv.system.novastor.ssh.port }}"
+          port: 2222
           username: "{{ st2kv.system.novastor.ssh.user }}"
           private_key: "{{ st2kv.system.novastor.ssh.key.path }}"
           timeout: 21600 # 6 hour timeout
@@ -49,7 +125,7 @@ workflows:
         action: chatops.post_message
         input:
           channel: "{{ st2kv.system.slack.channel }}"
-          message: "Runfolder *{{ _.runfolder_name }}* successfuly synced to {{ _.dest_host }}"
+          message: "Runfolder *{{ _.runfolder_name }}* successfuly synced to HPC."
         publish: # publish a successfull state
           state: "0"
 
@@ -68,10 +144,9 @@ workflows:
         input:
           cmd: "ssh {{ _.rsync_ssh_user }}@{{ _.dest_host }} 'ln -sf {{ _.dest_path }}/Fastq/{{ _.runfolder_name }} {{ _.dest_path }}/Ready/{{ _.runfolder_name }}'"
           hosts: "{{ st2kv.system.novastor.ssh.host }}"
-          port: "{{ st2kv.system.novastor.ssh.port }}"
+          port: 2222
           username: "{{ st2kv.system.novastor.ssh.user }}"
           private_key: "{{ st2kv.system.novastor.ssh.key.path }}"
-          timeout: 43200
         on-success:
           - post_ready_link_success
           - update_group: "{{ _.dest_host == 'spartan.hpc.unimelb.edu.au' }}"
@@ -95,15 +170,15 @@ workflows:
           state: "-1"
 
 
+      # change the linux group for the generated resources on Spartan
       update_group:
         action: core.remote
         input:
           cmd: "ssh {{ _.rsync_ssh_user }}@{{ _.dest_host }} 'chown -R :punim0010 {{ _.dest_path }}/Fastq/{{ _.runfolder_name }} {{ _.dest_path }}/Ready/{{ _.runfolder_name }}'"
           hosts: "{{ st2kv.system.novastor.ssh.host }}"
-          port: "{{ st2kv.system.novastor.ssh.port }}"
+          port: 2222
           username: "{{ st2kv.system.novastor.ssh.user }}"
           private_key: "{{ st2kv.system.novastor.ssh.key.path }}"
-          timeout: 43200
         on-success:
           - post_group_update_success
 
