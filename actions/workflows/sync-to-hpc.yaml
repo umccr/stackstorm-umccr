@@ -42,7 +42,7 @@ workflows:
         input:
           cmd: "cd {{ _.runfolder_base_path }}/{{ _.runfolder_name }} && find . -not \\( -path ./Thumbnail_Images -prune \\) -not \\( -path ./Data -prune \\) -not \\( -path ./runfolder.md5 -prune \\) -type f -exec md5sum '{}' \\; > ./runfolder.md5"
           hosts: "{{ st2kv.system.novastor.ssh.host }}"
-          port: 2222
+          port:  "{{ st2kv.system.novastor.ssh.port | int }}"
           username: "{{ st2kv.system.novastor.ssh.user }}"
           private_key: "{{ st2kv.system.novastor.ssh.key.path }}"
           timeout: 1800 # 30 min timeout
@@ -75,7 +75,7 @@ workflows:
         input:
           cmd: "cd {{ _.bcl2fastq_output_base_path }}/{{ _.runfolder_name }} && find . -not \\( -path ./bcl2fastq.md5 -prune \\) -type f -exec md5sum '{}' \\; > ./bcl2fastq.md5"
           hosts: "{{ st2kv.system.novastor.ssh.host }}"
-          port: 2222
+          port: "{{ st2kv.system.novastor.ssh.port | int }}"
           username: "{{ st2kv.system.novastor.ssh.user }}"
           private_key: "{{ st2kv.system.novastor.ssh.key.path }}"
           timeout: 21600 # 6 hour timeout
@@ -108,7 +108,7 @@ workflows:
         input:
           cmd: 'rsync -avzh --append-verify {{ _.excludes }} {{ _.source_path }} -e "ssh" {{ _.rsync_ssh_user }}@{{ _.dest_host }}:{{ _.dest_path }}/Fastq/{{ _.runfolder_name }}'
           hosts: "{{ st2kv.system.novastor.ssh.host }}"
-          port: 2222
+          port: "{{ st2kv.system.novastor.ssh.port | int }}"
           username: "{{ st2kv.system.novastor.ssh.user }}"
           private_key: "{{ st2kv.system.novastor.ssh.key.path }}"
           timeout: 21600 # 6 hour timeout
@@ -144,7 +144,7 @@ workflows:
         input:
           cmd: "ssh {{ _.rsync_ssh_user }}@{{ _.dest_host }} 'ln -sf {{ _.dest_path }}/Fastq/{{ _.runfolder_name }} {{ _.dest_path }}/Ready/{{ _.runfolder_name }}'"
           hosts: "{{ st2kv.system.novastor.ssh.host }}"
-          port: 2222
+          port: "{{ st2kv.system.novastor.ssh.port | int }}"
           username: "{{ st2kv.system.novastor.ssh.user }}"
           private_key: "{{ st2kv.system.novastor.ssh.key.path }}"
         on-success:
@@ -176,7 +176,7 @@ workflows:
         input:
           cmd: "ssh {{ _.rsync_ssh_user }}@{{ _.dest_host }} 'chown -R :punim0010 {{ _.dest_path }}/Fastq/{{ _.runfolder_name }} {{ _.dest_path }}/Ready/{{ _.runfolder_name }}'"
           hosts: "{{ st2kv.system.novastor.ssh.host }}"
-          port: 2222
+          port: "{{ st2kv.system.novastor.ssh.port | int }}"
           username: "{{ st2kv.system.novastor.ssh.user }}"
           private_key: "{{ st2kv.system.novastor.ssh.key.path }}"
         on-success:
