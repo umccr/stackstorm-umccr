@@ -157,7 +157,7 @@ workflows:
     type: direct
     input:
       - runfolder_name
-      - destination
+      - destination: 'NCI'
 
 
     # TODO: the workflow does not know of any state, multiple submission of the workflow for the same data is not handled properly

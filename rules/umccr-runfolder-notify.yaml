@@ -10,7 +10,6 @@ trigger:
 criteria:  {}
 
 action:
-  ref: umccr.novastor_incoming
+  ref: umccr.incoming_wf
   parameters:
-    runfolder: "{{ trigger.runfolder }}"
     runfolder_name: "{{ trigger.runfolder_name }}"
