@@ -17,7 +17,6 @@ parameters:
   port:
     type: 'integer'
     description: "The ssh port for connecting to the remote host."
-    immutable: true
     default: "{{ st2kv.system.novastor.ssh.port | int }}"
   username:
     description: "The ssh user name."

@@ -1,0 +1,291 @@
+version: "2.0" # mistral version
+name: umccr.incoming_wf
+description: "Run the incoming pipeline, from runfolder detection to bcl2fastq conversion."
+
+workflows:
+
+  arrival:
+    type: direct
+    input:
+      - runfolder_name
+
+    tasks:
+      # Start: notify users of a new runfolder
+      post_arrival_start:
+        action: chatops.post_message
+        input:
+          channel: "{{ st2kv.system.slack.channel }}"
+          message: "New runfolder *{{ _.runfolder_name }}* ready."
+        on-success:
+          - samplesheet_check
+          - post_samplesheet_check
+
+      # Then check the SampleSheet.csv file whether we can directly use it for the bcl2fastq conversion
+      post_samplesheet_check:
+        action: chatops.post_message
+        input:
+          channel: "{{ st2kv.system.slack.channel }}"
+          message: "Checking SampleSheet of *{{ _.runfolder_name }}*"
+
+      samplesheet_check:
+        action: umccr.samplesheet_check
+        input:
+          runfolder_name: "{{ _.runfolder_name }}"
+        on-success:
+          - bcl2fastq_start
+          - post_check_success
+        on-error:
+          - post_check_failure
+
+      post_check_success:
+        action: chatops.post_message
+        input:
+          channel: "{{ st2kv.system.slack.channel }}"
+          message: "SampleSheet check for runfolder *{{ _.runfolder_name }}* succeeded. Proceeding to bcl2fastq conversion."
+
+      post_check_failure:
+        action: chatops.post_message
+        input:
+          channel: "{{ st2kv.system.slack.channel }}"
+          message: "ERROR: Sample sheet check for runfolder *{{ _.runfolder_name }}* failed. Automatic conversion not possible."
+        on-complete:
+          - fail
+
+      # Next: submit the bcl2fastq conversion job
+      bcl2fastq_start:
+        action: umccr.bcl2fastq_start
+        input:
+          runfolder_name: "{{ _.runfolder_name }}"
+        on-success:
+          - post_bcl2fastq_start_success
+        on-error:
+          - post_bcl2fastq_start_failure
+
+      post_bcl2fastq_start_success:
+        action: chatops.post_message
+        input:
+          channel: "{{ st2kv.system.slack.channel }}"
+          message: "Runfolder *{{ _.runfolder_name }}* successfully submitted for conversion with bcl2fastq."
+
+      post_bcl2fastq_start_failure:
+        action: chatops.post_message
+        input:
+          channel: "{{ st2kv.system.slack.channel }}"
+          message: "ERROR: Could not submit runfolder *{{ _.runfolder_name }}* for conversion."
+        on-complete:
+          - fail
+
+      # Further steps will be triggered once the bcl2fastq conversion has finished
+
+
+  checksum:
+    type: direct
+    input:
+      - runfolder_name
+      - runfolder_base_path: "{{ st2kv.system.runfolder.base.path }}"
+      - bcl2fastq_output_base_path: "{{ st2kv.system.bcl2fastq.output.base.path }}"
+
+    tasks:
+      # Notify of workflow start
+      post_checksum_start:
+        action: chatops.post_message
+        input:
+          channel: "{{ st2kv.system.slack.channel }}"
+          message: "Creating checksums for *{{ _.runfolder_name }}* ..."
+        on-success:
+          - create_runfolder_checksums
+
+      # create the checksums for raw runfolder data (except the documented exclusions)
+      create_runfolder_checksums:
+        action: umccr.runfolder_checksums
+        input:
+          runfolder_name: "{{ _.runfolder_name }}"
+        on-success:
+          - create_fastq_checksums
+          - post_runfolder_checksum_success
+        on-error:
+          - post_runfolder_checksum_failure
+
+      post_runfolder_checksum_success:
+        action: chatops.post_message
+        input:
+          channel: "{{ st2kv.system.slack.channel }}"
+          message: "Checksums for runfolder *{{ _.runfolder_name }}* successfuly created! Creating checksums for FASTQs..."
+
+      post_runfolder_checksum_failure:
+        action: chatops.post_message
+        input:
+          channel: "{{ st2kv.system.slack.channel }}"
+          message: "ERROR: Checksums for runfolder *{{ _.runfolder_name }}* failed!"
+        on-complete:
+          - fail
+
+
+      # create the checksums for the bcl2fastq output
+      create_fastq_checksums:
+        action: umccr.bcl2fastq_checksums
+        input:
+          runfolder_name: "{{ _.runfolder_name }}"
+        on-success:
+          - transfer
+          - post_fastq_success
+        on-error:
+          - post_fastq_failure
+
+      post_fastq_success:
+        action: chatops.post_message
+        input:
+          channel: "{{ st2kv.system.slack.channel }}"
+          message: "Checksums for FASTQs of *{{ _.runfolder_name }}* successfuly created! Starting data sync to HPC."
+
+      post_fastq_failure:
+        action: chatops.post_message
+        input:
+          channel: "{{ st2kv.system.slack.channel }}"
+          message: "ERROR: Checksums for FASTQs of *{{ _.runfolder_name }}* failed!"
+        on-complete:
+          - fail
+
+      transfer:
+        workflow: transfer
+        input:
+          runfolder_name: "{{ _.runfolder_name }}"
+          destination: "NCI"
+
+
+  transfer:
+    type: direct
+    input:
+      - runfolder_name
+      - destination
+
+
+    # TODO: the workflow does not know of any state, multiple submission of the workflow for the same data is not handled properly
+    # TODO: rsync excludes are hard coded in the workflow definition, but are used in different workflows (i.e. also for checksum). Perhaps there's a way to keep them in sync...
+    # TODO: workflow now depends on Slack posts, perhaps we should change that so posts can't fail the workflow?
+    # TODO: Discuss creating checksum scripts (perhaps Ansible tasks). Would create more moving parts, but would allow the use of different scripts (dev/prod via st2kv value) and would allow to run the actual operation manually on the host
+    # TODO: explore pause/resume of workflow
+
+
+    tasks:
+      # Notify of workflow start
+      post_transfer_start:
+        action: chatops.post_message
+        input:
+          channel: "{{ st2kv.system.slack.channel }}"
+          message: "Rsync'ing *{{ _.runfolder_name }}* to HPC."
+        on-success:
+          - rsync_to_destination
+
+
+      # sync the data to the HPC
+      rsync_to_destination:
+        action: umccr.rsync2hpc
+        input:
+          runfolder_name: "{{ _.runfolder_name }}"
+        retry: # retry the command 3 times with 30sec delay in case of error, then fail
+          count: 3
+          delay: 30
+        on-success:
+          - create_ready_link_nci: "{{ _.destination == 'NCI' }}"
+          - create_ready_link_spartan: "{{ _.destination == 'SPARTAN' }}"
+          - post_rsync_success
+        on-error:
+          - post_rsync_error
+
+      post_rsync_success:
+        action: chatops.post_message
+        input:
+          channel: "{{ st2kv.system.slack.channel }}"
+          message: "Runfolder *{{ _.runfolder_name }}* successfuly synced to HPC."
+
+      post_rsync_error:
+        action: chatops.post_message
+        input:
+          channel: "{{ st2kv.system.slack.channel }}"
+          message: "ERROR: Runfolder *{{ _.runfolder_name }}* sync failed!"
+        on-complete:
+          - fail
+
+
+      # create the symlink in the Ready folder as flag that the data in now in place and ready to be used
+      create_ready_link_nci:
+        action: umccr.ready_link
+        input:
+          runfolder_name: "{{ _.runfolder_name }}"
+        on-success:
+          - post_ready_link_nci_success
+        on-error:
+          - post_ready_link_nci_error
+
+      post_ready_link_nci_success:
+        action: chatops.post_message
+        input:
+          channel: "{{ st2kv.system.slack.channel }}"
+          message: "Runfolder *{{ _.runfolder_name }}* successfuly flagged as _ready_ on NCI."
+
+      post_ready_link_nci_error:
+        action: chatops.post_message
+        input:
+          channel: "{{ st2kv.system.slack.channel }}"
+          message: "ERROR: Could not create symlink for *{{ _.runfolder_name }}* on NCI!"
+        on-complete:
+          - fail
+
+
+      create_ready_link_spartan:
+        action: umccr.ready_link
+        input:
+          runfolder_name: "{{ _.runfolder_name }}"
+          dest_path: "/data/cephfs/punim0010/data/Pipeline/"
+          rsync_ssh_user: "brainstorm"
+          dest_host: "spartan.hpc.unimelb.edu.au"
+        on-success:
+          - update_group_spartan
+          - post_ready_link_spartan_success
+        on-error:
+          - post_ready_link_spartan_error
+
+      post_ready_link_spartan_success:
+        action: chatops.post_message
+        input:
+          channel: "{{ st2kv.system.slack.channel }}"
+          message: "Runfolder *{{ _.runfolder_name }}* successfuly flagged as _ready_ on SPARTAN."
+
+      post_ready_link_spartan_error:
+        action: chatops.post_message
+        input:
+          channel: "{{ st2kv.system.slack.channel }}"
+          message: "ERROR: Could not create symlink for *{{ _.runfolder_name }}* on SPARTAN!"
+        on-complete:
+          - fail
+
+
+      # change the linux group for the generated resources on Spartan
+      # NOTE: no explicit umccr action, as this is just a fix for SPARTAN, not a generic action
+      update_group_spartan:
+        action: core.remote
+        input:
+          cmd: "ssh brainstorm@spartan.hpc.unimelb.edu.au 'chown -R :punim0010 /data/cephfs/punim0010/data/Pipeline/Fastq/{{ _.runfolder_name }} /data/cephfs/punim0010/data/Pipeline/Ready/{{ _.runfolder_name }}'"
+          hosts: "{{ st2kv.system.novastor.ssh.host }}"
+          port: "{{ st2kv.system.novastor.ssh.port | int }}"
+          username: "{{ st2kv.system.novastor.ssh.user }}"
+          private_key: "{{ st2kv.system.novastor.ssh.key.path }}"
+        on-success:
+          - post_update_group_spartan_success
+        on-error:
+          - post_update_group_spartan_error
+
+      post_update_group_spartan_success:
+        action: chatops.post_message
+        input:
+          channel: "{{ st2kv.system.slack.channel }}"
+          message: "Successfully changed user group of *{{ _.runfolder_name }}* to _punim0010_ on SPARTAN."
+
+      post_update_group_spartan_error:
+        action: chatops.post_message
+        input:
+          channel: "{{ st2kv.system.slack.channel }}"
+          message: "ERROR changing user group of *{{ _.runfolder_name }}* to _punim0010_ on SPARTAN."
+        on-complete:
+          - fail

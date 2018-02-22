@@ -1,0 +1,62 @@
+---
+name: rsync2hpc
+pack: umccr
+description: "Rsync raw/fastq data to HPC."
+enabled: false
+runner_type: "remote-shell-cmd"
+entry_point: ''
+parameters:
+  runfolder_name:
+    description: "The name (not full path) of the runfolder to sync."
+    required: true
+    type: string
+  source_paths:
+    description: "The path of the directory to sync. Should end in (i.e. include!) the runfolder name."
+    required: false
+    type: string
+    default: "{{ st2kv.system.runfolder.base.path }}/{{ runfolder_name }}/ {{ st2kv.system.bcl2fastq.output.base.path }}/{{ runfolder_name }}/"
+  excludes:
+    description: "exclude option(s) to provide to the rsync command."
+    required: false
+    type: string
+    default: "--exclude Data --exclude Thumbnail_Images"
+  dest_host:
+    description: "The host to sync to"
+    required: false
+    type: string
+    default: "{{ st2kv.system.hpc.copy.host }}"
+  dest_path:
+    description: "Base path for pipeline output on the respective destination host. A sub-dir structure according to UMCCR definitions is expected."
+    required: false
+    type: string
+    default: "{{ st2kv.system.pipeline.data.base.path }}"
+  rsync_ssh_user:
+    description: "The ssh user to run the rsync command with."
+    required: false
+    type: string
+    default: "{{ st2kv.system.hpc.copy.user }}"
+  hosts:
+    description: "The remote host where to run the remote-shell-cmd."
+    immutable: true
+    default: "{{ st2kv.system.novastor.ssh.host }}"
+  port:
+    type: 'integer'
+    description: "The ssh port for connecting to the remote host."
+    default: "{{ st2kv.system.novastor.ssh.port | int }}"
+  username:
+    description: "The ssh user name."
+    immutable: true
+    default: "{{ st2kv.system.novastor.ssh.user }}"
+  private_key:
+    description: "The private key to use for ssh."
+    immutable: true
+    default: "{{ st2kv.system.novastor.ssh.key.path }}"
+  timeout:
+    default: 21600
+  cmd:
+    description: "The command to run on the remote host."
+    immutable: true
+    # default: 'rsync -avzh --append-verify {{ excludes }} {{ source_paths }} -e "ssh" {{ rsync_ssh_user }}@{{ dest_host }}:{{ dest_path }}/Fastq/{{ runfolder_name }}'
+    default: "{{ st2kv.system.rsync.script }} -x {{ excludes }} -d {{ dest_host }} -s {{ source_paths }} -p {{ dest_path }} -u {{ rsync_ssh_user }}"
+  sudo:
+    immutable: true

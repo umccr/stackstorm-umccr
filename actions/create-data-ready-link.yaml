@@ -1,24 +1,30 @@
 ---
-name: bcl2fastq_start
+name: ready_link
 pack: umccr
-description: Action to start the bcl2fastq conversion.
+description: "Create a data ready link indicating that a new dataset is ready to be processed."
 enabled: false
 runner_type: "remote-shell-cmd"
 entry_point: ''
 parameters:
   runfolder_name:
-    description: "The name (not full path) of the runfolder to convert."
+    description: "The name (not full path) of the runfolder."
     required: true
     type: string
-  output_dir:
-    description: "The bcl2fastq output directory."
-    required: true
-    type: string
-    default: "{{ st2kv.system.bcl2fastq.output.base.path }}/{{ runfolder_name }}"
-  extra_params:
-    description: "Additional bcl2fastq parameters."
+  dest_path:
+    description: "Base path for pipeline output on the respective destination host. A sub-dir structure according to UMCCR definitions is expected."
     required: false
     type: string
+    default: "{{ st2kv.system.pipeline.data.base.path }}"
+  rsync_ssh_user:
+    description: "The ssh user to run the rsync command with."
+    required: false
+    type: string
+    default: "{{ st2kv.system.hpc.copy.user }}"
+  dest_host:
+    description: "The host to sync to"
+    required: false
+    type: string
+    default: "{{ st2kv.system.hpc.copy.host }}"
   hosts:
     description: "The remote host where to run the remote-shell-cmd."
     immutable: true
@@ -38,6 +44,6 @@ parameters:
   cmd:
     description: "The command to run on the remote host."
     immutable: true
-    default: "nohup {{ st2kv.system.bcl2fastq.run.script }} -R {{ st2kv.system.runfolder.base.path }}/{{ runfolder_name }} -n {{ runfolder_name }} -o {{ output_dir }} -k {{ st2kv.system.api.key.webhook }} {% if extra_params %}{{ extra_params }}{% endif %} &"
+    default: "ssh {{ rsync_ssh_user }}@{{ dest_host }} 'ln -sf {{ dest_path }}/Fastq/{{ runfolder_name }} {{ dest_path }}/Ready/{{ runfolder_name }}'"
   sudo:
     immutable: true

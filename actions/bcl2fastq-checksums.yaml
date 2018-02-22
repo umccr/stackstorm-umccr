@@ -1,24 +1,19 @@
 ---
-name: bcl2fastq_start
+name: bcl2fastq_checksums
 pack: umccr
-description: Action to start the bcl2fastq conversion.
+description: "Create checksums for the bcl2fastq output data."
 enabled: false
 runner_type: "remote-shell-cmd"
 entry_point: ''
 parameters:
   runfolder_name:
-    description: "The name (not full path) of the runfolder to convert."
+    description: "The name (not full path) of the runfolder."
     required: true
     type: string
-  output_dir:
-    description: "The bcl2fastq output directory."
-    required: true
-    type: string
-    default: "{{ st2kv.system.bcl2fastq.output.base.path }}/{{ runfolder_name }}"
-  extra_params:
-    description: "Additional bcl2fastq parameters."
-    required: false
-    type: string
+  bcl2fastq_output_base_path:
+    description: "bcl2fastq output base path"
+    immutable: true
+    default: "{{ st2kv.system.bcl2fastq.output.base.path }}"
   hosts:
     description: "The remote host where to run the remote-shell-cmd."
     immutable: true
@@ -35,9 +30,12 @@ parameters:
     description: "The private key to use for ssh."
     immutable: true
     default: "{{ st2kv.system.novastor.ssh.key.path }}"
+  timeout:
+    default: 21600
   cmd:
     description: "The command to run on the remote host."
     immutable: true
-    default: "nohup {{ st2kv.system.bcl2fastq.run.script }} -R {{ st2kv.system.runfolder.base.path }}/{{ runfolder_name }} -n {{ runfolder_name }} -o {{ output_dir }} -k {{ st2kv.system.api.key.webhook }} {% if extra_params %}{{ extra_params }}{% endif %} &"
+    # default: "cd {{ bcl2fastq_output_base_path }}/{{ runfolder_name }} && find . -not \\( -path ./bcl2fastq.md5 -prune \\) -type f -exec md5sum '{}' \\; > ./bcl2fastq.md5"
+    default: "{{ st2kv.system.checksum.script }} bcl2fastq {{ bcl2fastq_output_base_path }}/{{ runfolder_name }}"
   sudo:
     immutable: true

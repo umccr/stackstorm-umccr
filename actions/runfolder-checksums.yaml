@@ -1,32 +1,27 @@
 ---
-name: bcl2fastq_start
+name: runfolder_checksums
 pack: umccr
-description: Action to start the bcl2fastq conversion.
+description: "Create checksums for the runfolder data."
 enabled: false
 runner_type: "remote-shell-cmd"
 entry_point: ''
 parameters:
   runfolder_name:
-    description: "The name (not full path) of the runfolder to convert."
+    description: "The name (not full path) of the runfolder."
     required: true
     type: string
-  output_dir:
-    description: "The bcl2fastq output directory."
-    required: true
-    type: string
-    default: "{{ st2kv.system.bcl2fastq.output.base.path }}/{{ runfolder_name }}"
-  extra_params:
-    description: "Additional bcl2fastq parameters."
-    required: false
-    type: string
+  runfolder_base_path:
+    description: "Runfolder base path"
+    immutable: true
+    default: "{{ st2kv.system.runfolder.base.path }}"
   hosts:
     description: "The remote host where to run the remote-shell-cmd."
     immutable: true
     default: "{{ st2kv.system.novastor.ssh.host }}"
   port:
-    type: 'integer'
     description: "The ssh port for connecting to the remote host."
     default: "{{ st2kv.system.novastor.ssh.port | int }}"
+    type: 'integer'
   username:
     description: "The ssh user name."
     immutable: true
@@ -35,9 +30,12 @@ parameters:
     description: "The private key to use for ssh."
     immutable: true
     default: "{{ st2kv.system.novastor.ssh.key.path }}"
+  timeout:
+    default: 1800
   cmd:
     description: "The command to run on the remote host."
     immutable: true
-    default: "nohup {{ st2kv.system.bcl2fastq.run.script }} -R {{ st2kv.system.runfolder.base.path }}/{{ runfolder_name }} -n {{ runfolder_name }} -o {{ output_dir }} -k {{ st2kv.system.api.key.webhook }} {% if extra_params %}{{ extra_params }}{% endif %} &"
+    # default: "cd {{ runfolder_base_path }}/{{ runfolder_name }} && find . -not \\( -path ./Thumbnail_Images -prune \\) -not \\( -path ./Data -prune \\) -not \\( -path ./runfolder.md5 -prune \\) -type f -exec md5sum '{}' \\; > ./runfolder.md5"
+    default: "{{ st2kv.system.checksum.script }} runfolder {{ runfolder_base_path }}/{{ runfolder_name }}"
   sudo:
     immutable: true

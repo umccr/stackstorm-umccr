@@ -13,6 +13,7 @@ criteria:
     type: equals
 
 action:
-  ref: umccr.sync2hpc
+  ref: umccr.incoming_wf
   parameters:
     runfolder_name: "{{ trigger.runfolder_name }}"
+    workflow: "umccr.incoming_wf.checksum"
