@@ -6,7 +6,7 @@ function write_log {
   echo "$(date +'%Y-%m-%d %H:%M:%S.%N') $script: $1" > /dev/udp/localhost/9999
   echo "$(date +'%Y-%m-%d %H:%M:%S.%N') $script: $1" >> $DIR/${script}.log
 }
-write_log "INFO: Invocation with parameters: $@"
+write_log "INFO: Invocation with parameters: $*"
 
 use_case=$1
 directory=$2
