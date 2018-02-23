@@ -150,7 +150,6 @@ workflows:
         workflow: transfer
         input:
           runfolder_name: "{{ _.runfolder_name }}"
-          destination: "NCI"
 
 
   transfer:

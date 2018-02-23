@@ -1,6 +1,15 @@
 #!/bin/bash
 
+script=$(basename $0)
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+function write_log {
+  echo "$(date +'%Y-%m-%d %H:%M:%S.%N') $script: $1" > /dev/udp/localhost/9999
+  echo "$(date +'%Y-%m-%d %H:%M:%S.%N') $script: $1" >> $DIR/$(script).log
+}
+write_log "INFO: Invocation with parameters: $@"
+
 if [[ $# -lt 6 ]]; then
+  write_log "ERROR: Insufficient parameters"
   echo "A minimum of 5 arguments are required!"
   echo "  - The rsync exclusions [-x|--excludes]"
   echo "  - The destination host [-d|--dest_host]"
@@ -10,7 +19,6 @@ if [[ $# -lt 6 ]]; then
   exit -1
 fi
 
-bcl2fastq_version="latest"
 optional_args=()
 while [[ $# -gt 0 ]]
 do
@@ -51,34 +59,40 @@ done
 
 if test ! "$excludes"
 then
+  write_log "ERROR: Parameter 'excludes' missing"
   echo "You have to provide a excludes parameter!"
   exit -1
 fi
 
 if test ! "$dest_host"
 then
+  write_log "ERROR: Parameter 'dest_host' missing"
   echo "You have to provide a dest_host parameter!"
   exit -1
 fi
 
 if test ! "$ssh_user"
 then
+  write_log "ERROR: Parameter 'ssh_user' missing"
   echo "You have to provide a ssh_user parameter!"
   exit -1
 fi
 
 if test ! "$dest_path"
 then
+  write_log "ERROR: Parameter 'dest_path' missing"
   echo "You have to provide a dest_path parameter!"
   exit -1
 fi
 
 if test ! "$source_paths"
 then
+  write_log "ERROR: Parameter 'source_paths' missing"
   echo "You have to provide a source_paths parameter!"
   exit -1
 fi
 
 cmd="rsync -avzh --append-verify $excludes $source_paths -e \"ssh\" $ssh_user@$dest_host:$dest_path"
+write_log "INFO: Running: $cmd"
 # eval $cmd
 echo "$cmd"
