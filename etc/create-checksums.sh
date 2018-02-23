@@ -14,6 +14,7 @@ directory=$2
 
 if test $directory && test -d $directory
 then
+  write_log "INFO: Moving to $directory"
   cd $directory
 else
   write_log "ERROR: Not a valid directory: $directory"
