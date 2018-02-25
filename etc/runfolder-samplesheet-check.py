@@ -9,15 +9,16 @@ DIR = os.path.dirname(os.path.realpath(__file__))
 LOG_FILE_NAME = os.path.join(DIR, SCRIPT + ".log")
 UDP_IP = "127.0.0.1"
 UDP_PORT = 9999
-SOCK = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
 
 LOG_FILE = open(LOG_FILE_NAME, "a+")
 
 
 def write_log(msg):
   now = datetime.datetime.now()
-  msg = "%s %s: %s " % (now, SCRIPT, msg)
+  msg = "%s %s: %s \n" % (now, SCRIPT, msg)
+  SOCK = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
   SOCK.sendto(bytes(msg, "utf-8"), (UDP_IP, UDP_PORT))
+  SOCK.close()
   print(msg, file=LOG_FILE)
 
 
