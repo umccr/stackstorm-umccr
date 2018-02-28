@@ -10,9 +10,14 @@ parameters:
     description: "The name (not full path) of the runfolder to convert."
     required: true
     type: string
+  runfolder_dir:
+    description: "The full directory/path of the runfolder to convert (ending in the runfolder name)."
+    required: false
+    type: string
+    default: "{{ st2kv.system.runfolder.base.path }}/{{ runfolder_name }}"
   output_dir:
     description: "The bcl2fastq output directory."
-    required: true
+    required: false
     type: string
     default: "{{ st2kv.system.bcl2fastq.output.base.path }}/{{ runfolder_name }}"
   extra_params:
@@ -38,6 +43,6 @@ parameters:
   cmd:
     description: "The command to run on the remote host."
     immutable: true
-    default: "nohup {{ st2kv.system.bcl2fastq.run.script }} -R {{ st2kv.system.runfolder.base.path }}/{{ runfolder_name }} -n {{ runfolder_name }} -o {{ output_dir }} -k {{ st2kv.system.api.key.webhook }} {% if extra_params %}{{ extra_params }}{% endif %} &"
+    default: "nohup {{ st2kv.system.bcl2fastq.run.script }} -R {{ runfolder_dir }} -n {{ runfolder_name }} -o {{ output_dir }} -k {{ st2kv.system.api.key.webhook }} {% if extra_params %}{{ extra_params }}{% endif %} &"
   sudo:
     immutable: true

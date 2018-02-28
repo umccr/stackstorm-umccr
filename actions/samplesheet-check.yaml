@@ -10,6 +10,11 @@ parameters:
     description: "The name (not full path) of the runfolder."
     required: true
     type: string
+  samplesheet_name:
+    description: "The name of the samplesheet."
+    required: false
+    type: string
+    default: "SampleSheet.csv"
   hosts:
     description: "The remote host where to run the remote-shell-cmd."
     immutable: true
@@ -29,6 +34,6 @@ parameters:
   cmd:
     description: "The command to run on the remote host."
     immutable: true
-    default: "python {{ st2kv.system.samplesheet.check.script }} {{ st2kv.system.runfolder.base.path }}/{{ runfolder_name }}/SampleSheet.csv"
+    default: "python {{ st2kv.system.samplesheet.check.script }} {{ st2kv.system.runfolder.base.path }}/{{ runfolder_name }}/{{ samplesheet_name }}"
   sudo:
     immutable: true

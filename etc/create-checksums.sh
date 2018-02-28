@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# TODO: change hard coded exclude paths into parameters
+# TODO: make more generic
+
+
 script=$(basename $0)
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 function write_log {
