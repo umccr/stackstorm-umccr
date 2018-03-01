@@ -8,6 +8,7 @@ workflows:
     type: direct
     input:
       - runfolder_name
+      - out_dirs
 
     tasks:
       # Start: notify users of a new runfolder
@@ -82,8 +83,7 @@ workflows:
     type: direct
     input:
       - runfolder_name
-      - runfolder_base_path: "{{ st2kv.system.runfolder.base.path }}"
-      - bcl2fastq_output_base_path: "{{ st2kv.system.bcl2fastq.output.base.path }}"
+      - out_dirs
 
     tasks:
       # Notify of workflow start
@@ -102,6 +102,7 @@ workflows:
           runfolder_name: "{{ _.runfolder_name }}"
         on-success:
           - create_fastq_checksums
+          # - debug_task
           - post_runfolder_checksum_success
         on-error:
           - post_runfolder_checksum_failure
@@ -120,12 +121,21 @@ workflows:
         on-complete:
           - fail
 
+      # debug_task:
+      #   action: chatops.post_message
+      #   with-items: "msg in {{ _.out_dirs.split(',') }}"
+      #   input:
+      #     channel: "{{ st2kv.system.slack.channel }}"
+      #     message: "{{ _.msg }}"
 
       # create the checksums for the bcl2fastq output
       create_fastq_checksums:
         action: umccr.bcl2fastq_checksums
+        # with-items: "out_path in {{ _.out_dirs }}"
+        with-items: "out_path in {{ _.out_dirs.split(',') }}"
         input:
           runfolder_name: "{{ _.runfolder_name }}"
+          bcl2fastq_output_path: "{{ _.out_path }}"
         on-success:
           - transfer
           - post_fastq_success
@@ -147,16 +157,21 @@ workflows:
           - fail
 
       transfer:
+        join: all
         workflow: transfer
         input:
           runfolder_name: "{{ _.runfolder_name }}"
+          out_dirs: "{{ _.out_dirs }}"
 
 
   transfer:
     type: direct
     input:
       - runfolder_name
+      - out_dirs
       - destination: 'NCI'
+      - runfolder_base_path: "{{ st2kv.system.runfolder.base.path }}"
+
 
 
     # TODO: the workflow does not know of any state, multiple submission of the workflow for the same data is not handled properly

@@ -17,3 +17,4 @@ action:
   parameters:
     runfolder_name: "{{ trigger.runfolder_name }}"
     workflow: "umccr.incoming_wf.checksum"
+    out_dirs: "{{ trigger.out_dirs }}"

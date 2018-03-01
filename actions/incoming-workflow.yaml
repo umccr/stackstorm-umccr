@@ -13,3 +13,7 @@ parameters:
   workflow:
     default: umccr.incoming_wf.arrival
     type: string
+  out_dirs:
+    description: "List of bcl2fastq output directories produced by the bcl2fastq conversion process."
+    required: false
+    type: string

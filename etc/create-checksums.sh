@@ -22,7 +22,7 @@ then
   cd $directory
 else
   write_log "ERROR: Not a valid directory: $directory"
-  echo "You need to specify a use case and a base directory"
+  (>&2 echo "ERROR: Not a valid directory: $directory")
   exit -1
 fi
 
@@ -42,7 +42,7 @@ then
   echo "$cmd"
 else
   write_log "ERROR: Not a valid use case: $use_case"
-  echo "Not a valid useage!"
+  (>&2 echo "ERROR: Not a valid use case: $use_case")
   echo " Usage: ./$script [bcl2fastq|runfolder] <directory path>"
   exit -1
 fi
