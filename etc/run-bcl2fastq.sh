@@ -1,12 +1,17 @@
 #!/bin/bash
 
-# write the script logs next to the script itself
-script=$(basename $0)
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+script_name=$(basename $0)
+script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+lock_file="$script_dir/${script_name}.lock"
+sleep_time=600
+script_pid=$$
+
 function write_log {
-  echo "$(date +'%Y-%m-%d %H:%M:%S.%N') $script: $1" > /dev/udp/localhost/9999
-  echo "$(date +'%Y-%m-%d %H:%M:%S.%N'): $1" >> $DIR/${script}.log
+  msg="$(date +'%Y-%m-%d %H:%M:%S.%N') $script_name $script_pid: $1"
+  echo "$msg" > /dev/udp/localhost/9999
+  echo "$msg" >> $script_dir/${script_name}.log
 }
+
 
 write_log "INFO: Invocation with parameters: $*"
 
@@ -77,34 +82,119 @@ if [[ -z "$runfolder_name" ]]; then
   exit -1
 fi
 
+# TODO: just a sanity check
+# TODO: could scrap runfolder_name parameter and extract name from runfolder_dir instead
+# TODO: should check that we really have a runfolder dir or just let the conversion fail?
+if [[ "$(basename $runfolder_dir)" != "$runfolder_name" ]]; then
+  write_log "ERROR: The provided runfolder directory does not match the provided runfolder name!"
+  echo "ERROR: The provided runfolder directory does not match the provided runfolder name!"
+  exit -1
+fi
+
 if [[ -z "$st2_api_key" ]]; then
   write_log "ERROR: Parameter 'st2_api_key' missing"
   echo "You have to provide an st2 api key!"
   exit -1
 fi
 
+# Input parameters are all OK, we can start the actual process
 
-# make sure the output directory exists
-mkdir_command="mkdir -p \"$output_dir\""
-write_log "INFO: creating output dir: $mkdir_command"
-eval $mkdir_command
-
-# run the actual conversion
-cmd="docker run --rm -v $runfolder_dir:$runfolder_dir:ro -v $output_dir:$output_dir umccr/bcl2fastq:$bcl2fastq_version -R $runfolder_dir -o $output_dir ${optional_args[*]} >& $output_dir/${runfolder_name}.log"
-write_log "INFO: running command: $cmd"
-write_log "INFO: writing bcl2fastq logs to: $output_dir/${runfolder_name}.log"
-eval $cmd
-ret_code=$?
-
-if [ $ret_code != 0 ]; then
-  status="error"
-  write_log "ERROR: bcl2fastq conversion failed with exit code: $ret_code"
-else
-  status="done"
-  write_log "INFO: bcl2fastq conversion succeeded"
+# First we check if there is no other conversion job running
+if test -e "$lock_file"
+then
+  write_log "INFO: A conversion is already ongoing! This process (pid:$script_pid) has to wait."
+  sleep $sleep_time
 fi
 
+while test -e "$lock_file"
+do
+  write_log "DEBUG: $script_pid is still waiting ..."
+  sleep $sleep_time
+done
+
+# write a lock file to prevent multiple processes from running simultaneously, as it would create too much load on the system
+write_log "DEBUG: Creating lock file"
+touch $lock_file
+
+shopt -s nullglob
+custom_samplesheets=("${runfolder_dir}"/SampleSheet.csv.custom*)
+num_custom_samplesheets=${#custom_samplesheets[@]}
+
+# we distinguish the 'normal' case, when there are no custom sample sheets
+# from the case where there are custom sample sheets
+out_dirs=() # collect the generated output directories, as they are needed in further pipeline steps
+if test "$num_custom_samplesheets" -gt 0; then
+
+  write_log "INFO: Custom sample sheets detected."
+
+  for samplesheet in "${custom_samplesheets[@]}"; do
+    write_log "INFO: Processing sample sheet: $samplesheet"
+    custom_tag=${samplesheet#*SampleSheet.csv.}
+    output_dir="${output_dir}_$custom_tag"
+    out_dirs+=("$output_dir")
+
+
+    # make sure the output directory exists
+    mkdir_command="mkdir -p \"$output_dir\""
+    write_log "INFO: creating output dir: $mkdir_command"
+    eval $mkdir_command
+
+    # run the actual conversion
+    cmd="docker run --rm -v $runfolder_dir:$runfolder_dir:ro -v $output_dir:$output_dir umccr/bcl2fastq:$bcl2fastq_version -R $runfolder_dir -o $output_dir ${optional_args[*]} --sample-sheet $samplesheet >& $output_dir/${runfolder_name}.log"
+    write_log "INFO: running command: $cmd"
+    write_log "INFO: writing bcl2fastq logs to: $output_dir/${runfolder_name}.log"
+    eval $cmd
+    ret_code=$?
+
+    if [ $ret_code != 0 ]; then
+      status="error"
+      write_log "ERROR: bcl2fastq conversion of $samplesheet failed with exit code: $ret_code."
+      break # we are conservative and don't continue if there is an error on wich any conversion
+    else
+      status="done"
+      write_log "INFO: bcl2fastq conversion of $samplesheet succeeded."
+    fi
+
+  done
+
+else
+  write_log "INFO: No custom sample sheet. Assuming default."
+
+  # make sure the output directory exists
+  out_dirs+=("$output_dir")
+  mkdir_command="mkdir -p $output_dir"
+  write_log "INFO: creating output dir: $mkdir_command"
+  eval $mkdir_command
+
+  # run the actual conversion
+  cmd="docker run --rm -v $runfolder_dir:$runfolder_dir:ro -v $output_dir:$output_dir umccr/bcl2fastq:$bcl2fastq_version -R $runfolder_dir -o $output_dir ${optional_args[*]} >& $output_dir/${runfolder_name}.log"
+  write_log "INFO: running command: $cmd"
+  write_log "INFO: writing bcl2fastq logs to: $output_dir/${runfolder_name}.log"
+  eval $cmd
+  ret_code=$?
+
+
+  if [ $ret_code != 0 ]; then
+    status="error"
+    write_log "ERROR: bcl2fastq conversion failed with exit code: $ret_code"
+  else
+    status="done"
+    write_log "INFO: bcl2fastq conversion succeeded"
+  fi
+
+fi
+
+# not that the conversion is finished we can release the resources
+rm $lock_file
+
+bcl2fastq_output_dirs=""
+for path in "${out_dirs[@]}"; do
+  bcl2fastq_output_dirs="${bcl2fastq_output_dirs}${path},"
+done
+bcl2fastq_output_dirs="${bcl2fastq_output_dirs::-1}"
+
+
 # finally notify StackStorm of completion
-webhook="curl --insecure -X POST https://arteria.umccr.nopcode.org/api/v1/webhooks/st2 -H \"St2-Api-Key: $st2_api_key\" -H \"Content-Type: application/json\" --data '{\"trigger\": \"umccr.bcl2fastq\", \"payload\": {\"status\": \"$status\", \"runfolder_name\": \"$runfolder_name\", \"runfolder\": \"$runfolder_dir\"}}'"
+webhook="curl --insecure -X POST https://arteria.umccr.nopcode.org/api/v1/webhooks/st2 -H \"St2-Api-Key: $st2_api_key\" -H \"Content-Type: application/json\" --data '{\"trigger\": \"umccr.bcl2fastq\", \"payload\": {\"status\": \"$status\", \"runfolder_name\": \"$runfolder_name\", \"runfolder\": \"$runfolder_dir\", \"out_dirs\": \"${bcl2fastq_output_dirs}\"}}'"
 write_log "INFO: calling home: $webhook"
 eval $webhook

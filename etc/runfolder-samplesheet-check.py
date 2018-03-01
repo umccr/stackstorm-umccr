@@ -2,32 +2,36 @@ import sys
 import os
 import socket
 import datetime
+import collections
 from sample_sheet import SampleSheet
 
 SCRIPT = os.path.basename(__file__)
-DIR = os.path.dirname(os.path.realpath(__file__))
-LOG_FILE_NAME = os.path.join(DIR, SCRIPT + ".log")
+SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
+LOG_FILE_NAME = os.path.join(SCRIPT_DIR, SCRIPT + ".log")
 UDP_IP = "127.0.0.1"
 UDP_PORT = 9999
 
 LOG_FILE = open(LOG_FILE_NAME, "a+")
+SOCK = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
 
 
 def write_log(msg):
-  now = datetime.datetime.now()
-  msg = "%s %s: %s \n" % (now, SCRIPT, msg)
-  SOCK = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
-  SOCK.sendto(bytes(msg, "utf-8"), (UDP_IP, UDP_PORT))
-  SOCK.close()
-  print(msg, file=LOG_FILE)
+    now = datetime.datetime.now()
+    msg = "%s %s: %s \n" % (now, SCRIPT, msg)
+    SOCK.sendto(bytes(msg, "utf-8"), ( UDP_IP, UDP_PORT ))
+    print(msg, file=LOG_FILE)
 
+# TODO: validate input parameter?
+samplesheet_file_path = sys.argv[1]
 
+samplesheet_name = os.path.basename(samplesheet_file_path)
+samplesheet_dir = os.path.dirname(os.path.realpath(samplesheet_file_path))
 
-sample_sheet = SampleSheet(sys.argv[1])
-write_log("INFO: Checking SampleSheet %s" % sys.argv[1])
+sample_sheet = SampleSheet(samplesheet_file_path)
+write_log("INFO: Checking SampleSheet %s" % samplesheet_file_path)
 
 # first create all index length tuples
-index_tuples = set()
+sorted_samples = collections.defaultdict(list)
 for sample in sample_sheet:
     index_length = len(sample.index.replace("N",""))
 
@@ -36,27 +40,37 @@ for sample in sample_sheet:
     else:
         index2_length = 0
 
-    index_tuples.add((index_length, index2_length))
+    sorted_samples[(index_length, index2_length)].append(sample)
+    write_log("DEBUG: Adding sample %s to key (%s, %s)" % ( sample, index_length, index2_length ))
 
 
-# then check if we have index combinations we cannot handle
-# if there are more than one combination, we abort as a custom sample sheet is required
-if len(index_tuples) is not 1:
-    write_log("INFO: Unsupported use case: multiple index combinations")
-    exit(1)
 
-# there is only a single index combination
-index_tuple = index_tuples.pop()
-# if the second index is 0 we are fine
-if index_tuple[1] is 0:
-    write_log("INFO: Second index is missing... all good.")
-    exit(0)
+samplesheet_files = list()
+if len(sorted_samples) is 1:
+    key, value = sorted_samples.popitem()
+    write_log("INFO: Only one index lengths combination (%s\%s). No need for custom sample sheets." % ( key[0], key[1] ))
+else:
+    write_log("INFO: Multiple index lengths combination. Need custom sample sheets.")
+    count=0
+    for key in sorted_samples:
+        count += 1
+        write_log("DEBUG: %s samples with index lengths %s/%s" % ( len(sorted_samples[key]), key[0], key[1] ))
 
-if index_tuple[0] is not index_tuple[1]:
-    write_log("INFO: Unsupported use case: indexes with different length")
-    exit(1)
+        new_sample_sheet = SampleSheet()
+        new_sample_sheet.Header = sample_sheet.Header
+        new_sample_sheet.Reads = sample_sheet.Reads
+        new_sample_sheet.Settings = sample_sheet.Settings
+        for sample in sorted_samples[key]:
+          new_sample_sheet.add_sample(sample)
 
-write_log("INFO: Indexes have same length... all good.")
+        new_sample_sheet_file = os.path.join(samplesheet_dir, samplesheet_name + ".custom" + count)
+        samplesheet_files.append(new_sample_sheet_file)
+        f = open(new_sample_sheet_file, "w")
+        new_sample_sheet.write(f)
+        f.close()
 
+
+write_log("INFO: Created files: %s" % samplesheet_files)
 
 LOG_FILE.close()
+SOCK.close()
