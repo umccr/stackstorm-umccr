@@ -17,8 +17,8 @@ SOCK = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
 
 def write_log(msg):
     now = datetime.datetime.now()
-    msg = "%s %s: %s \n" % (now, SCRIPT, msg)
-    SOCK.sendto(bytes(msg, "utf-8"), ( UDP_IP, UDP_PORT ))
+    msg = "%s %s: %s" % (now, SCRIPT, msg)
+    SOCK.sendto(bytes(msg+"\n", "utf-8"), ( UDP_IP, UDP_PORT ))
     print(msg, file=LOG_FILE)
 
 # TODO: validate input parameter?
@@ -78,3 +78,5 @@ else:
 
 LOG_FILE.close()
 SOCK.close()
+
+write_log("INFO: All done.")

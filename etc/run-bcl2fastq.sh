@@ -15,7 +15,7 @@ function write_log {
 
 write_log "INFO: Invocation with parameters: $*"
 
-if [[ $# -lt 4 ]]; then
+if [[ $# -lt 8 ]]; then
   write_log "ERROR: Insufficient parameters"
   echo "A minimum of 4 arguments are required!"
   echo "  1) The runfolder directory [-R|--runfolder-dir]"
@@ -130,20 +130,21 @@ if test "$num_custom_samplesheets" -gt 0; then
   for samplesheet in "${custom_samplesheets[@]}"; do
     write_log "INFO: Processing sample sheet: $samplesheet"
     custom_tag=${samplesheet#*SampleSheet.csv.}
-    output_dir="${output_dir}_$custom_tag"
-    out_dirs+=("$output_dir")
+    write_log "DEBUG: Extracted sample sheet tag: $custom_tag"
+    custom_output_dir="${output_dir}_$custom_tag"
+    out_dirs+=("$custom_output_dir")
 
 
     # make sure the output directory exists
-    mkdir_command="mkdir -p \"$output_dir\""
+    mkdir_command="mkdir -p \"$custom_output_dir\""
     write_log "INFO: creating output dir: $mkdir_command"
-    eval $mkdir_command
+    eval "$mkdir_command"
 
     # run the actual conversion
-    cmd="docker run --rm -v $runfolder_dir:$runfolder_dir:ro -v $output_dir:$output_dir umccr/bcl2fastq:$bcl2fastq_version -R $runfolder_dir -o $output_dir ${optional_args[*]} --sample-sheet $samplesheet >& $output_dir/${runfolder_name}.log"
+    cmd="docker run --rm -v $runfolder_dir:$runfolder_dir:ro -v $custom_output_dir:$custom_output_dir umccr/bcl2fastq:$bcl2fastq_version -R $runfolder_dir -o $custom_output_dir ${optional_args[*]} --sample-sheet $samplesheet >& $custom_output_dir/${runfolder_name}.log"
     write_log "INFO: running command: $cmd"
-    write_log "INFO: writing bcl2fastq logs to: $output_dir/${runfolder_name}.log"
-    eval $cmd
+    write_log "INFO: writing bcl2fastq logs to: $custom_output_dir/${runfolder_name}.log"
+    eval "$cmd"
     ret_code=$?
 
     if [ $ret_code != 0 ]; then
@@ -164,13 +165,13 @@ else
   out_dirs+=("$output_dir")
   mkdir_command="mkdir -p $output_dir"
   write_log "INFO: creating output dir: $mkdir_command"
-  eval $mkdir_command
+  eval "$mkdir_command"
 
   # run the actual conversion
   cmd="docker run --rm -v $runfolder_dir:$runfolder_dir:ro -v $output_dir:$output_dir umccr/bcl2fastq:$bcl2fastq_version -R $runfolder_dir -o $output_dir ${optional_args[*]} >& $output_dir/${runfolder_name}.log"
   write_log "INFO: running command: $cmd"
   write_log "INFO: writing bcl2fastq logs to: $output_dir/${runfolder_name}.log"
-  eval $cmd
+  eval "$cmd"
   ret_code=$?
 
 
@@ -197,4 +198,6 @@ bcl2fastq_output_dirs="${bcl2fastq_output_dirs::-1}"
 # finally notify StackStorm of completion
 webhook="curl --insecure -X POST https://arteria.umccr.nopcode.org/api/v1/webhooks/st2 -H \"St2-Api-Key: $st2_api_key\" -H \"Content-Type: application/json\" --data '{\"trigger\": \"umccr.bcl2fastq\", \"payload\": {\"status\": \"$status\", \"runfolder_name\": \"$runfolder_name\", \"runfolder\": \"$runfolder_dir\", \"out_dirs\": \"${bcl2fastq_output_dirs}\"}}'"
 write_log "INFO: calling home: $webhook"
-eval $webhook
+eval "$webhook"
+
+write_log "INFO: All done."

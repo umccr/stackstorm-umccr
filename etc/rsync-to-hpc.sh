@@ -3,25 +3,25 @@
 script=$(basename $0)
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 function write_log {
-  echo "$(date +'%Y-%m-%d %H:%M:%S.%N') $script: $1" > /dev/udp/localhost/9999
-  echo "$(date +'%Y-%m-%d %H:%M:%S.%N') $script: $1" >> $DIR/${script}.log
+  msg="$(date +'%Y-%m-%d %H:%M:%S.%N') $script: $1"
+  echo "$msg" > /dev/udp/localhost/9999
+  echo "$msg" >> $DIR/${script}.log
 }
 write_log "INFO: Invocation with parameters: $*"
 
-if [[ $# -lt 6 ]]; then
+if test "$#" -lt 8; then
   write_log "ERROR: Insufficient parameters"
-  echo "A minimum of 5 arguments are required!"
-  echo "  - The rsync exclusions [-x|--excludes]"
+  echo "A minimum of 4 arguments are required!"
   echo "  - The destination host [-d|--dest_host]"
   echo "  - The ssh user [-u|--ssh_user]"
   echo "  - The destination path [-p|--dest_path]"
-  echo "  - The source paths [-s|--source_paths]"
+  echo "  - The source paths [-s|--source_path]"
+  echo "  - (optional) The rsync exclusions [-x|--excludes]"
   exit -1
 fi
 
 optional_args=()
-while [[ $# -gt 0 ]]
-do
+while test "$#" -gt 0; do
   key="$1"
 
   case $key in
@@ -45,8 +45,8 @@ do
       shift # past argument
       shift # past value
       ;;
-    -s|--source_paths)
-      source_paths="$2"
+    -s|--source_path)
+      source_path="$2"
       shift # past argument
       shift # past value
       ;;
@@ -59,9 +59,7 @@ done
 
 if test ! "$excludes"
 then
-  write_log "ERROR: Parameter 'excludes' missing"
-  echo "You have to provide a excludes parameter!"
-  exit -1
+  excludes=""
 fi
 
 if test ! "$dest_host"
@@ -85,14 +83,15 @@ then
   exit -1
 fi
 
-if test ! "$source_paths"
+if test ! "$source_path"
 then
-  write_log "ERROR: Parameter 'source_paths' missing"
-  echo "You have to provide a source_paths parameter!"
+  write_log "ERROR: Parameter 'source_path' missing"
+  echo "You have to provide a source_path parameter!"
   exit -1
 fi
 
-cmd="rsync -avzh --append-verify $excludes $source_paths -e \"ssh\" $ssh_user@$dest_host:$dest_path"
+cmd="rsync -avzh --append-verify $excludes $source_path -e \"ssh\" $ssh_user@$dest_host:$dest_path"
 write_log "INFO: Running: $cmd"
-# eval $cmd
-echo "$cmd"
+eval "$cmd"
+
+write_log "INFO: All done."

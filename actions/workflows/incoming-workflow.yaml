@@ -2,6 +2,15 @@ version: "2.0" # mistral version
 name: umccr.incoming_wf
 description: "Run the incoming pipeline, from runfolder detection to bcl2fastq conversion."
 
+
+    # TODO: the workflow does not know of any state, multiple submission of the workflow for the same data is not handled properly
+    # TODO: rsync excludes are hard coded in the workflow definition, but are used in different workflows (i.e. also for checksum). Perhaps there's a way to keep them in sync...
+    # TODO: workflow now depends on Slack posts, perhaps we should change that so posts can't fail the workflow?
+    # TODO: Discuss handling remote scripts from ST2 (perhaps via Ansible tasks or remote-shell-script runner)
+    # TODO: discuss remote script provisioning; from ST2 instance vs on remote host(s)
+    # TODO: discuss sync/async tasks
+    # TODO: split mini workflows out into separate workflows? To be individually callable
+
 workflows:
 
   arrival:
@@ -37,6 +46,7 @@ workflows:
           - post_check_success
         on-error:
           - post_check_failure
+        # TODO: publish the number of created custom sample sheets (if applicable)
 
       post_check_success:
         action: chatops.post_message
@@ -53,6 +63,8 @@ workflows:
           - fail
 
       # Next: submit the bcl2fastq conversion job
+      # this job will detect if there are multiple sample sheets and will launch a conversion for each one
+      # TODO: this logic should be here, not in the remote script! (probably requires to keep the state of the workflow in ST2)
       bcl2fastq_start:
         action: umccr.bcl2fastq_start
         input:
@@ -102,7 +114,7 @@ workflows:
           runfolder_name: "{{ _.runfolder_name }}"
         on-success:
           - create_fastq_checksums
-          # - debug_task
+          - post_bcl2bcl2fastq_output_path
           - post_runfolder_checksum_success
         on-error:
           - post_runfolder_checksum_failure
@@ -121,18 +133,18 @@ workflows:
         on-complete:
           - fail
 
-      # debug_task:
-      #   action: chatops.post_message
-      #   with-items: "msg in {{ _.out_dirs.split(',') }}"
-      #   input:
-      #     channel: "{{ st2kv.system.slack.channel }}"
-      #     message: "{{ _.msg }}"
+      post_bcl2bcl2fastq_output_path:
+        action: chatops.post_message
+        with-items: "msg in {{ _.out_dirs.split(',') }}"
+        input:
+          channel: "{{ st2kv.system.slack.channel }}"
+          message: "{{ _.msg }}"
 
       # create the checksums for the bcl2fastq output
       create_fastq_checksums:
         action: umccr.bcl2fastq_checksums
-        # with-items: "out_path in {{ _.out_dirs }}"
         with-items: "out_path in {{ _.out_dirs.split(',') }}"
+        concurrency: 1
         input:
           runfolder_name: "{{ _.runfolder_name }}"
           bcl2fastq_output_path: "{{ _.out_path }}"
@@ -171,14 +183,7 @@ workflows:
       - out_dirs
       - destination: 'NCI'
       - runfolder_base_path: "{{ st2kv.system.runfolder.base.path }}"
-
-
-
-    # TODO: the workflow does not know of any state, multiple submission of the workflow for the same data is not handled properly
-    # TODO: rsync excludes are hard coded in the workflow definition, but are used in different workflows (i.e. also for checksum). Perhaps there's a way to keep them in sync...
-    # TODO: workflow now depends on Slack posts, perhaps we should change that so posts can't fail the workflow?
-    # TODO: Discuss creating checksum scripts (perhaps Ansible tasks). Would create more moving parts, but would allow the use of different scripts (dev/prod via st2kv value) and would allow to run the actual operation manually on the host
-    # TODO: explore pause/resume of workflow
+      - hpc_dest_base_path: "{{ st2kv.system.pipeline.data.base.path }}"
 
 
     tasks:
@@ -189,31 +194,31 @@ workflows:
           channel: "{{ st2kv.system.slack.channel }}"
           message: "Rsync'ing *{{ _.runfolder_name }}* to HPC."
         on-success:
-          - rsync_to_destination
+          - rsync_runfolder
 
 
-      # sync the data to the HPC
-      rsync_to_destination:
+      rsync_runfolder:
         action: umccr.rsync2hpc
         input:
-          runfolder_name: "{{ _.runfolder_name }}"
+          source_path: "{{ _.runfolder_base_path }}/{{ _.runfolder_name }}"
+          dest_path: "{{ _.hpc_dest_base_path }}/Fastq/"
+          excludes: "--exclude Data --exclude Thumbnail_Images"
         retry: # retry the command 3 times with 30sec delay in case of error, then fail
           count: 3
           delay: 30
         on-success:
-          - create_ready_link_nci: "{{ _.destination == 'NCI' }}"
-          - create_ready_link_spartan: "{{ _.destination == 'SPARTAN' }}"
-          - post_rsync_success
+          - rsync_bcl2fastq_output
+          - post_runfolder_rsync_success
         on-error:
-          - post_rsync_error
+          - post_runfolder_rsync_error
 
-      post_rsync_success:
+      post_runfolder_rsync_success:
         action: chatops.post_message
         input:
           channel: "{{ st2kv.system.slack.channel }}"
-          message: "Runfolder *{{ _.runfolder_name }}* successfuly synced to HPC."
+          message: "Runfolder *{{ _.runfolder_name }}* successfuly synced to HPC. Syncing bcl2fastq output..."
 
-      post_rsync_error:
+      post_runfolder_rsync_error:
         action: chatops.post_message
         input:
           channel: "{{ st2kv.system.slack.channel }}"
@@ -222,8 +227,41 @@ workflows:
           - fail
 
 
+      rsync_bcl2fastq_output:
+        action: umccr.rsync2hpc
+        with-items: "out_path in {{ _.out_dirs.split(',') }}"
+        concurrency: 1
+        input:
+          source_path: "{{ _.out_path }}"
+          dest_path: "{{ _.hpc_dest_base_path }}/Fastq/{{ _.runfolder_name }}"
+        retry: # retry the command 3 times with 30sec delay in case of error, then fail
+          count: 3
+          delay: 30
+        on-success:
+          - create_ready_link_nci: "{{ _.destination == 'NCI' }}"
+          - create_ready_link_spartan: "{{ _.destination == 'SPARTAN' }}"
+          - post_bcl2fastq_rsync_success
+        on-error:
+          - post_bcl2fastq_rsync_error
+
+      post_bcl2fastq_rsync_success:
+        action: chatops.post_message
+        input:
+          channel: "{{ st2kv.system.slack.channel }}"
+          message: "bcl2fastq output for runfolder *{{ _.runfolder_name }}* successfuly synced to HPC."
+
+      post_bcl2fastq_rsync_error:
+        action: chatops.post_message
+        input:
+          channel: "{{ st2kv.system.slack.channel }}"
+          message: "ERROR: Failed to rsync bcl2fastq output for runfolder *{{ _.runfolder_name }}*!"
+        on-complete:
+          - fail
+
+
       # create the symlink in the Ready folder as flag that the data in now in place and ready to be used
       create_ready_link_nci:
+        join: all
         action: umccr.ready_link
         input:
           runfolder_name: "{{ _.runfolder_name }}"
@@ -248,6 +286,7 @@ workflows:
 
 
       create_ready_link_spartan:
+        join: all
         action: umccr.ready_link
         input:
           runfolder_name: "{{ _.runfolder_name }}"
@@ -276,7 +315,7 @@ workflows:
 
 
       # change the linux group for the generated resources on Spartan
-      # NOTE: no explicit umccr action, as this is just a fix for SPARTAN, not a generic action
+      # NOTE: no explicit pack action, as this is just a fix for SPARTAN, not a generic solution
       update_group_spartan:
         action: core.remote
         input:
