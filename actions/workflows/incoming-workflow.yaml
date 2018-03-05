@@ -114,7 +114,6 @@ workflows:
           runfolder_name: "{{ _.runfolder_name }}"
         on-success:
           - create_fastq_checksums
-          - post_bcl2bcl2fastq_output_path
           - post_runfolder_checksum_success
         on-error:
           - post_runfolder_checksum_failure
@@ -124,6 +123,8 @@ workflows:
         input:
           channel: "{{ st2kv.system.slack.channel }}"
           message: "Checksums for runfolder *{{ _.runfolder_name }}* successfuly created! Creating checksums for FASTQs..."
+        on-success:
+          - post_bcl2bcl2fastq_output_path
 
       post_runfolder_checksum_failure:
         action: chatops.post_message
@@ -138,7 +139,7 @@ workflows:
         with-items: "msg in {{ _.out_dirs.split(',') }}"
         input:
           channel: "{{ st2kv.system.slack.channel }}"
-          message: "{{ _.msg }}"
+          message: "bcl2fastq output directory: *{{ _.msg }}*"
 
       # create the checksums for the bcl2fastq output
       create_fastq_checksums:
