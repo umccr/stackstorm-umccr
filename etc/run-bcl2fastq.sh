@@ -2,7 +2,7 @@
 
 script_name=$(basename $0)
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-lock_file="$script_dir/${script_name}.lock"
+lock_dir="$script_dir/${script_name}_lock"
 sleep_time=600
 script_pid=$$
 
@@ -38,7 +38,7 @@ do
       shift # past value
       ;;
     -o|--output-dir)
-      output_dir="$2"
+      output_dir="${2%/}" # strip trailing slash if present
       shift # past argument
       shift # past value
       ;;
@@ -99,22 +99,13 @@ fi
 
 # Input parameters are all OK, we can start the actual process
 
-# First we check if there is no other conversion job running
-if test -e "$lock_file"
-then
-  write_log "INFO: A conversion is already ongoing! This process (pid:$script_pid) has to wait."
-  sleep $sleep_time
-fi
-
-while test -e "$lock_file"
-do
-  write_log "DEBUG: $script_pid is still waiting ..."
+# Aquire a lock to prevent parallel script execution
+write_log "INFO: $script_pid Aquiring lock..."
+while ! mkdir "$lock_dir"; do
+  write_log "DEBUG: $script_pid is locked and waiting ..."
   sleep $sleep_time
 done
-
-# write a lock file to prevent multiple processes from running simultaneously, as it would create too much load on the system
-write_log "DEBUG: Creating lock file"
-touch $lock_file
+write_log "INFO: $script_pid Aquired lock"
 
 shopt -s nullglob
 custom_samplesheets=("${runfolder_dir}"/SampleSheet.csv.custom*)
@@ -186,7 +177,7 @@ else
 fi
 
 # not that the conversion is finished we can release the resources
-rm $lock_file
+rm -rf $lock_dir
 
 bcl2fastq_output_dirs=""
 for path in "${out_dirs[@]}"; do
