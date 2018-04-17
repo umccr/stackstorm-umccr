@@ -2,6 +2,9 @@
 
 # TODO: change hard coded exclude paths into parameters
 # TODO: make more generic
+# TODO: parallelise
+# TODO: create .md5 file per input file
+# TODO: make async. i.e. webhook callback once finished
 
 
 script=$(basename $0)

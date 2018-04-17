@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# TODO: make async, i.e. webhook callback once finished
+# TODO: parallelise (for example sync each fastq file separately?)
+
 script=$(basename $0)
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 function write_log {
