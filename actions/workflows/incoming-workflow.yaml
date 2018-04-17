@@ -69,6 +69,7 @@ workflows:
         action: umccr.bcl2fastq_start
         input:
           runfolder_name: "{{ _.runfolder_name }}"
+          extra_params: "--no-lane-splitting"
         on-success:
           - post_bcl2fastq_start_success
         on-error:
@@ -122,7 +123,7 @@ workflows:
         action: chatops.post_message
         input:
           channel: "{{ st2kv.system.slack.channel }}"
-          message: "Checksums for runfolder *{{ _.runfolder_name }}* successfuly created! Creating checksums for FASTQs..."
+          message: "Checksums for runfolder *{{ _.runfolder_name }}* successfully created! Creating checksums for FASTQs..."
         on-success:
           - post_bcl2bcl2fastq_output_path
 
@@ -159,7 +160,7 @@ workflows:
         action: chatops.post_message
         input:
           channel: "{{ st2kv.system.slack.channel }}"
-          message: "Checksums for FASTQs of *{{ _.runfolder_name }}* successfuly created! Starting data sync to HPC."
+          message: "Checksums for FASTQs of *{{ _.runfolder_name }}* successfully created! Starting data sync to HPC."
 
       post_fastq_failure:
         action: chatops.post_message
@@ -182,7 +183,7 @@ workflows:
     input:
       - runfolder_name
       - out_dirs
-      - destination: 'NCI'
+      - destination: "{{ st2kv.system.hpc.id }}"
       - runfolder_base_path: "{{ st2kv.system.runfolder.base.path }}"
       - hpc_dest_base_path: "{{ st2kv.system.pipeline.data.base.path }}"
 
@@ -193,10 +194,9 @@ workflows:
         action: chatops.post_message
         input:
           channel: "{{ st2kv.system.slack.channel }}"
-          message: "Rsync'ing *{{ _.runfolder_name }}* to HPC."
+          message: "Rsync'ing *{{ _.runfolder_name }}* to HPC ({{ _.destination }})."
         on-success:
           - rsync_runfolder
-
 
       rsync_runfolder:
         action: umccr.rsync2hpc
@@ -217,7 +217,7 @@ workflows:
         action: chatops.post_message
         input:
           channel: "{{ st2kv.system.slack.channel }}"
-          message: "Runfolder *{{ _.runfolder_name }}* successfuly synced to HPC. Syncing bcl2fastq output..."
+          message: "Runfolder *{{ _.runfolder_name }}* successfully synced to HPC ({{ _.destination }}). Syncing bcl2fastq output..."
 
       post_runfolder_rsync_error:
         action: chatops.post_message
@@ -226,7 +226,6 @@ workflows:
           message: "ERROR: Runfolder *{{ _.runfolder_name }}* sync failed!"
         on-complete:
           - fail
-
 
       rsync_bcl2fastq_output:
         action: umccr.rsync2hpc
@@ -239,8 +238,7 @@ workflows:
           count: 3
           delay: 30
         on-success:
-          - create_ready_link_nci: "{{ _.destination == 'NCI' }}"
-          - create_ready_link_spartan: "{{ _.destination == 'SPARTAN' }}"
+          - create_ready_link
           - post_bcl2fastq_rsync_success
         on-error:
           - post_bcl2fastq_rsync_error
@@ -249,7 +247,7 @@ workflows:
         action: chatops.post_message
         input:
           channel: "{{ st2kv.system.slack.channel }}"
-          message: "bcl2fastq output for runfolder *{{ _.runfolder_name }}* successfuly synced to HPC."
+          message: "bcl2fastq output for runfolder *{{ _.runfolder_name }}* successfully synced to HPC ({{ _.destination }})."
 
       post_bcl2fastq_rsync_error:
         action: chatops.post_message
@@ -259,61 +257,30 @@ workflows:
         on-complete:
           - fail
 
-
       # create the symlink in the Ready folder as flag that the data in now in place and ready to be used
-      create_ready_link_nci:
+      create_ready_link:
         join: all
         action: umccr.ready_link
         input:
           runfolder_name: "{{ _.runfolder_name }}"
         on-success:
-          - post_ready_link_nci_success
+          - post_ready_link_success
         on-error:
-          - post_ready_link_nci_error
+          - post_ready_link_error
 
-      post_ready_link_nci_success:
+      post_ready_link_success:
         action: chatops.post_message
         input:
           channel: "{{ st2kv.system.slack.channel }}"
-          message: "Runfolder *{{ _.runfolder_name }}* successfuly flagged as _ready_ on NCI."
+          message: "Runfolder *{{ _.runfolder_name }}* successfully flagged as _ready_ on {{ _.destination }}."
 
-      post_ready_link_nci_error:
+      post_ready_link_error:
         action: chatops.post_message
         input:
           channel: "{{ st2kv.system.slack.channel }}"
-          message: "ERROR: Could not create symlink for *{{ _.runfolder_name }}* on NCI!"
+          message: "ERROR: Could not create symlink for *{{ _.runfolder_name }}* on {{ _.destination }}!"
         on-complete:
           - fail
-
-
-      create_ready_link_spartan:
-        join: all
-        action: umccr.ready_link
-        input:
-          runfolder_name: "{{ _.runfolder_name }}"
-          dest_path: "/data/cephfs/punim0010/data/Pipeline/"
-          rsync_ssh_user: "brainstorm"
-          dest_host: "spartan.hpc.unimelb.edu.au"
-        on-success:
-          - update_group_spartan
-          - post_ready_link_spartan_success
-        on-error:
-          - post_ready_link_spartan_error
-
-      post_ready_link_spartan_success:
-        action: chatops.post_message
-        input:
-          channel: "{{ st2kv.system.slack.channel }}"
-          message: "Runfolder *{{ _.runfolder_name }}* successfuly flagged as _ready_ on SPARTAN."
-
-      post_ready_link_spartan_error:
-        action: chatops.post_message
-        input:
-          channel: "{{ st2kv.system.slack.channel }}"
-          message: "ERROR: Could not create symlink for *{{ _.runfolder_name }}* on SPARTAN!"
-        on-complete:
-          - fail
-
 
       # change the linux group for the generated resources on Spartan
       # NOTE: no explicit pack action, as this is just a fix for SPARTAN, not a generic solution
