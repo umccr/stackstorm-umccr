@@ -177,6 +177,7 @@ else
 fi
 
 # not that the conversion is finished we can release the resources
+write_log "INFO: releasing lock"
 rm -rf $lock_dir
 
 bcl2fastq_output_dirs=""
