@@ -12,7 +12,6 @@ parameters:
     type: string
   bcl2fastq_output_path:
     description: "bcl2fastq output base path"
-    immutable: true
     default: "{{ st2kv.system.bcl2fastq.output.base.path }}/{{ runfolder_name }}"
     type: string
   hosts:
