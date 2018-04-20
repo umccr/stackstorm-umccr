@@ -1,15 +1,17 @@
 #!/bin/bash
 
+# NOTE: endpont URL for webhook is hard coded and therefore fixed to the dev server.
+
 script_name=$(basename $0)
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 lock_dir="$script_dir/${script_name}_lock"
-sleep_time=600
+lock_check_sleep_time=300
 script_pid=$$
 
 function write_log {
   msg="$(date +'%Y-%m-%d %H:%M:%S.%N') $script_name $script_pid: $1"
-  echo "$msg" > /dev/udp/localhost/9999
   echo "$msg" >> $script_dir/${script_name}.log
+  echo "$msg"
 }
 
 
@@ -103,7 +105,7 @@ fi
 write_log "INFO: $script_pid Aquiring lock..."
 while ! mkdir "$lock_dir"; do
   write_log "DEBUG: $script_pid is locked and waiting ..."
-  sleep $sleep_time
+  sleep $lock_check_sleep_time
 done
 write_log "INFO: $script_pid Aquired lock"
 
@@ -135,8 +137,8 @@ if test "$num_custom_samplesheets" -gt 0; then
     cmd="docker run --rm -v $runfolder_dir:$runfolder_dir:ro -v $custom_output_dir:$custom_output_dir umccr/bcl2fastq:$bcl2fastq_version -R $runfolder_dir -o $custom_output_dir ${optional_args[*]} --sample-sheet $samplesheet >& $custom_output_dir/${runfolder_name}.log"
     write_log "INFO: running command: $cmd"
     write_log "INFO: writing bcl2fastq logs to: $custom_output_dir/${runfolder_name}.log"
-    eval "$cmd"
-    ret_code=$?
+    #eval "$cmd"
+    ret_code=0
 
     if [ $ret_code != 0 ]; then
       status="error"
@@ -162,8 +164,8 @@ else
   cmd="docker run --rm -v $runfolder_dir:$runfolder_dir:ro -v $output_dir:$output_dir umccr/bcl2fastq:$bcl2fastq_version -R $runfolder_dir -o $output_dir ${optional_args[*]} >& $output_dir/${runfolder_name}.log"
   write_log "INFO: running command: $cmd"
   write_log "INFO: writing bcl2fastq logs to: $output_dir/${runfolder_name}.log"
-  eval "$cmd"
-  ret_code=$?
+  #eval "$cmd"
+  ret_code=0
 
 
   if [ $ret_code != 0 ]; then
@@ -188,7 +190,7 @@ bcl2fastq_output_dirs="${bcl2fastq_output_dirs::-1}"
 
 
 # finally notify StackStorm of completion
-webhook="curl --insecure -X POST https://arteria.umccr.nopcode.org/api/v1/webhooks/st2 -H \"St2-Api-Key: $st2_api_key\" -H \"Content-Type: application/json\" --data '{\"trigger\": \"umccr.bcl2fastq\", \"payload\": {\"status\": \"$status\", \"runfolder_name\": \"$runfolder_name\", \"runfolder\": \"$runfolder_dir\", \"out_dirs\": \"${bcl2fastq_output_dirs}\"}}'"
+webhook="curl --insecure -X POST https://stackstorm.dev.umccr.org/api/v1/webhooks/st2 -H \"St2-Api-Key: $st2_api_key\" -H \"Content-Type: application/json\" --data '{\"trigger\": \"umccr.bcl2fastq\", \"payload\": {\"status\": \"$status\", \"runfolder_name\": \"$runfolder_name\", \"runfolder\": \"$runfolder_dir\", \"out_dirs\": \"${bcl2fastq_output_dirs}\"}}'"
 write_log "INFO: calling home: $webhook"
 eval "$webhook"
 
