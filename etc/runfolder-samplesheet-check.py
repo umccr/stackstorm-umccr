@@ -76,7 +76,6 @@ else:
         write_log("DEBUG: Created custom sample sheet: %s" % new_sample_sheet_file)
 
 
+write_log("INFO: All done.")
 LOG_FILE.close()
 SOCK.close()
-
-write_log("INFO: All done.")
