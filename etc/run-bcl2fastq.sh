@@ -188,7 +188,7 @@ bcl2fastq_output_dirs="${bcl2fastq_output_dirs::-1}"
 
 
 # finally notify StackStorm of completion
-webhook="curl --insecure -X POST https://arteria.umccr.nopcode.org/api/v1/webhooks/st2 -H \"St2-Api-Key: $st2_api_key\" -H \"Content-Type: application/json\" --data '{\"trigger\": \"umccr.bcl2fastq\", \"payload\": {\"status\": \"$status\", \"runfolder_name\": \"$runfolder_name\", \"runfolder\": \"$runfolder_dir\", \"out_dirs\": \"${bcl2fastq_output_dirs}\"}}'"
+webhook="curl --insecure -X POST https://stackstorm.prod.umccr.org/api/v1/webhooks/st2 -H \"St2-Api-Key: $st2_api_key\" -H \"Content-Type: application/json\" --data '{\"trigger\": \"umccr.bcl2fastq\", \"payload\": {\"status\": \"$status\", \"runfolder_name\": \"$runfolder_name\", \"runfolder\": \"$runfolder_dir\", \"out_dirs\": \"${bcl2fastq_output_dirs}\"}}'"
 write_log "INFO: calling home: $webhook"
 eval "$webhook"
 
