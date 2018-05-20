@@ -24,6 +24,8 @@ def write_log(msg):
 # TODO: validate input parameter?
 # TODO: still need to handle 10X cases....
 
+write_log("Invocation with: %s" % str(sys.argv))
+
 samplesheet_file_path = sys.argv[1]
 
 samplesheet_name = os.path.basename(samplesheet_file_path)
