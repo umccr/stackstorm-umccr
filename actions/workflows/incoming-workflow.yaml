@@ -151,12 +151,12 @@ workflows:
           runfolder_name: "{{ _.runfolder_name }}"
           bcl2fastq_output_path: "{{ _.out_path }}"
         on-success:
-          - transfer
-          - post_fastq_success
+          - start_transfer
+          - post_fastq_checksum_success
         on-error:
           - post_fastq_failure
 
-      post_fastq_success:
+      post_fastq_checksum_success:
         action: chatops.post_message
         input:
           channel: "{{ st2kv.system.slack.channel }}"
@@ -170,7 +170,7 @@ workflows:
         on-complete:
           - fail
 
-      transfer:
+      start_transfer:
         join: all
         workflow: transfer
         input:
@@ -265,6 +265,7 @@ workflows:
           runfolder_name: "{{ _.runfolder_name }}"
         on-success:
           - post_ready_link_success
+          - update_group_spartan
         on-error:
           - post_ready_link_error
 
