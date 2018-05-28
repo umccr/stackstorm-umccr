@@ -12,13 +12,14 @@ function write_log {
 }
 write_log "INFO: Invocation with parameters: $*"
 
-if test "$#" -lt 6; then
+if test "$#" -lt 8; then
   write_log "ERROR: Insufficient parameters"
   echo "Number of provided parameters: $(($# / 2))"
-  echo "A minimum of 3 arguments are required!"
+  echo "A minimum of 4 arguments are required!"
   echo "  - The destination bucket [-b|--bucket]"
   echo "  - The destination path [-d|--dest-dir]"
   echo "  - The source path [-s|--source-dir]"
+  echo "  - The AWS account number to upload to [-a|--account]"
   echo "  - (optional) The sync exclusions, in aws syntax [-x|--excludes]"
   exit -1
 fi
@@ -50,6 +51,11 @@ while test "$#" -gt 0; do
       shift # past argument
       shift # past value
       ;;
+    -a|--account)
+      aws_acc="$2"
+      shift # past argument
+      shift # past value
+      ;;
     -f|--force)
       force_write="1"
       shift # past argument
@@ -71,15 +77,15 @@ fi
 
 if test ! "$dest_path"
 then
-  write_log "ERROR: Parameter 'dest_path' missing"
-  echo "You have to provide a dest_path parameter!"
+  write_log "ERROR: Parameter 'dest-dir' missing"
+  echo "You have to provide a dest-dir parameter!"
   exit -1
 fi
 
 if test ! "$source_path"
 then
-  write_log "ERROR: Parameter 'source_path' missing"
-  echo "You have to provide at least one source_path parameter!"
+  write_log "ERROR: Parameter 'source-dir' missing"
+  echo "You have to provide at least one source-dir parameter!"
   exit -1
 fi
 
@@ -93,11 +99,19 @@ then
   fi
 fi
 
+if test ! "$aws_acc"
+then
+  write_log "ERROR: Parameter 'account' missing"
+  echo "You have to provide the account parameter!"
+  exit -1
+fi
+
+log_file_name=$(echo "$dest_path" | tr \/ _)
 
 # attempt to assume the ops admin role in dev
 export AWS_REGION=ap-southeast-2
 
-temp_role=$(aws sts assume-role --role-arn "arn:aws:iam::620123204273:role/ops_admin_no_mfa" --role-session-name "temp_session")
+temp_role=$(aws sts assume-role --role-arn "arn:aws:iam::$aws_acc:role/fastq_data_uploader" --role-session-name "temp_session")
 
 export AWS_ACCESS_KEY_ID=$(echo $temp_role | jq .Credentials.AccessKeyId | xargs)
 export AWS_SECRET_ACCESS_KEY=$(echo $temp_role | jq .Credentials.SecretAccessKey | xargs)
@@ -126,7 +140,9 @@ for i in "${excludes[@]}"
 do
   cmd+=" --exclude $i"
 done
-cmd+=" $source_path s3://$bucket/$dest_path"
+# TODO: find a better place to store the log file
+# TODO: perhaps add a timestamp to the log file name
+cmd+=" $source_path s3://$bucket/$dest_path > ${log_file_name}.log"
 
 write_log "INFO: Running: $cmd"
 eval "$cmd"
