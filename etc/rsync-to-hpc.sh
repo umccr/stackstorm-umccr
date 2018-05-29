@@ -93,7 +93,7 @@ then
   exit -1
 fi
 
-cmd="rsync -avzh --append-verify $excludes $source_path -e \"ssh\" $ssh_user@$dest_host:$dest_path"
+cmd="rsync -avh $excludes $source_path -e \"ssh\" $ssh_user@$dest_host:$dest_path"
 write_log "INFO: Running: $cmd"
 eval "$cmd"
 

@@ -26,9 +26,10 @@ EOF
 
 # TODO: log execution
 
-# configure two mount points:
+# configure mount points:
 # 1. the path to monitor for runfolders
-# 2. the app.config used to configure the serivce with that path
+# 2. the folder where to store the state information
+# 3. the custom app.config to use
 docker run -d --name=$tag-$timestamp --rm -p $port:80 \
         -v $runfolder_base:$runfolder_base:ro \
         -v $status_base:/opt/state-folder \

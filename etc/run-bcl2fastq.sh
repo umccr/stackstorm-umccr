@@ -3,7 +3,7 @@
 script_name=$(basename $0)
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 lock_dir="$script_dir/${script_name}_lock"
-sleep_time=600
+lock_check_sleep_time=300
 script_pid=$$
 
 function write_log {
@@ -103,7 +103,7 @@ fi
 write_log "INFO: $script_pid Aquiring lock..."
 while ! mkdir "$lock_dir"; do
   write_log "DEBUG: $script_pid is locked and waiting ..."
-  sleep $sleep_time
+  sleep $lock_check_sleep_time
 done
 write_log "INFO: $script_pid Aquired lock"
 
