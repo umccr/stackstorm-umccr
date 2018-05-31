@@ -111,7 +111,7 @@ log_file_name=$(echo "$dest_path" | tr \/ _)
 # attempt to assume the ops admin role in dev
 export AWS_REGION=ap-southeast-2
 
-temp_role=$(aws sts assume-role --role-arn "arn:aws:iam::$aws_acc:role/fastq_data_uploader" --role-session-name "temp_session")
+temp_role=$(aws sts assume-role --role-arn "arn:aws:iam::$aws_acc:role/fastq_data_uploader" --role-session-name "temp_session" --duration-seconds=21600)
 
 export AWS_ACCESS_KEY_ID=$(echo $temp_role | jq .Credentials.AccessKeyId | xargs)
 export AWS_SECRET_ACCESS_KEY=$(echo $temp_role | jq .Credentials.SecretAccessKey | xargs)
@@ -128,14 +128,14 @@ if [ $ret_code != 0 ]; then
 fi
 
 # configuring AWS S3 command
-aws configure set default.s3.max_concurrent_requests 20
+aws configure set default.s3.max_concurrent_requests 40
 aws configure set default.s3.max_queue_size 10000
 aws configure set default.s3.multipart_threshold 64MB
 aws configure set default.s3.multipart_chunksize 16MB
 aws configure set default.s3.max_bandwidth 500MB/s
 
 # build the command
-cmd="aws s3 sync --dryrun --no-follow-symlinks"
+cmd="aws s3 sync --no-progress --dryrun --no-follow-symlinks"
 for i in "${excludes[@]}"
 do
   cmd+=" --exclude $i"
