@@ -44,6 +44,6 @@ parameters:
   cmd:
     description: "The command to run on the remote host."
     immutable: true
-    default: "ssh {{ rsync_ssh_user }}@{{ dest_host }} 'ln -sf {{ dest_path }}/Fastq/{{ runfolder_name }} {{ dest_path }}/Ready/{{ runfolder_name }}'"
+    default: "ssh {{ rsync_ssh_user }}@{{ dest_host }} 'cd {{ dest_path }}/Ready && ln -sf ../Fastq/{{ runfolder_name }} {{ runfolder_name }}'"
   sudo:
     immutable: true
