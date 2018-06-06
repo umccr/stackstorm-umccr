@@ -258,6 +258,7 @@ workflows:
           - fail
 
       # create the symlink in the Ready folder as flag that the data in now in place and ready to be used
+      # TODO: The update_group_spartan path should only be entered if the destination host is 'SPARTAN'
       create_ready_link:
         join: all
         action: umccr.ready_link
@@ -265,7 +266,7 @@ workflows:
           runfolder_name: "{{ _.runfolder_name }}"
         on-success:
           - post_ready_link_success
-          - update_group_spartan
+          - update_group_spartan # TODO: make conditional
         on-error:
           - post_ready_link_error
 
