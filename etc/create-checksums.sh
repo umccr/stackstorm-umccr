@@ -6,7 +6,7 @@
 # TODO: create .md5 file per input file
 # TODO: make async. i.e. webhook callback once finished
 
-THREADS=40
+THREADS=10
 
 script=$(basename $0)
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
