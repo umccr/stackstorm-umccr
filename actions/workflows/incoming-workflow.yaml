@@ -18,6 +18,7 @@ workflows:
     input:
       - runfolder_name
       - out_dirs
+      - destination
 
     tasks:
       # Start: notify users of a new runfolder
@@ -97,6 +98,7 @@ workflows:
     input:
       - runfolder_name
       - out_dirs
+      - destination
 
     tasks:
       # Notify of workflow start
