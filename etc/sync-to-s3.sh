@@ -128,7 +128,7 @@ if [ $ret_code != 0 ]; then
 fi
 
 # configuring AWS S3 command
-aws configure set default.s3.max_concurrent_requests 40
+aws configure set default.s3.max_concurrent_requests 20
 aws configure set default.s3.max_queue_size 10000
 aws configure set default.s3.multipart_threshold 64MB
 aws configure set default.s3.multipart_chunksize 16MB
