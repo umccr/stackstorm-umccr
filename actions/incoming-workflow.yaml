@@ -17,3 +17,8 @@ parameters:
     description: "List of bcl2fastq output directories produced by the bcl2fastq conversion process."
     required: false
     type: string
+  destination:
+    default: "{{ st2kv.system.hpc.id }}"
+    description: "The destination HPC, either SPARTAN or NCI"
+    required: false
+    type: string
