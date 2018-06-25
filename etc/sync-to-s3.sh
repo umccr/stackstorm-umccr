@@ -20,7 +20,7 @@ if test "$#" -lt 8; then
   echo "  - The destination path [-d|--dest-dir]"
   echo "  - The source path [-s|--source-dir]"
   echo "  - The AWS account number to upload to [-a|--account]"
-  echo "  - (optional) The sync exclusions, in aws syntax [-x|--excludes]"
+  echo "  - (optional) The sync exclusions, in aws syntax [-e|--excludes]"
   exit -1
 fi
 
