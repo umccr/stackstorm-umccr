@@ -1,0 +1,52 @@
+---
+name: chgrp
+pack: umccr
+description: "Change the linux group of a file/directory"
+enabled: false
+runner_type: "remote-shell-cmd"
+entry_point: ''
+parameters:
+  files:
+    description: "The files or directories of which to change the group."
+    type: array
+    required: true
+  group:
+    description: "The group to change to."
+    type: string
+    required: true
+  recursive:
+    description: "Whether to apply the changes recursive or not."
+    type: string
+    required: false
+  rsync_ssh_user:
+    description: "The ssh user to run the rsync command with."
+    type: string
+    required: false
+    default: "{{ st2kv.system.hpc.copy.user }}"
+  dest_host:
+    description: "The host to sync to"
+    type: string
+    required: false
+    default: "{{ st2kv.system.hpc.copy.host }}"
+  hosts:
+    description: "The remote host where to run the remote-shell-cmd."
+    immutable: true
+    default: "{{ st2kv.system.novastor.ssh.host }}"
+  port:
+    type: 'integer'
+    description: "The ssh port for connecting to the remote host."
+    default: "{{ st2kv.system.novastor.ssh.port | int }}"
+  username:
+    description: "The ssh user name."
+    immutable: true
+    default: "{{ st2kv.system.novastor.ssh.user }}"
+  private_key:
+    description: "The private key to use for ssh."
+    immutable: true
+    default: "{{ st2kv.system.novastor.ssh.key.path }}"
+  cmd:
+    description: "The command to run on the remote host."
+    immutable: true
+    default: "ssh {{ rsync_ssh_user }}@{{ dest_host }} 'chgrp {% if recursive %}-R {% endif %}{{ group }}{% for file in files %} {{ file }}{% endfor %}'"
+  sudo:
+    immutable: true
