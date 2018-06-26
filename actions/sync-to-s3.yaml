@@ -1,0 +1,48 @@
+---
+name: sync2s3
+pack: umccr
+description: "Sync raw/fastq data to AWS S3."
+enabled: false
+runner_type: "remote-shell-cmd"
+entry_point: ''
+parameters:
+  dest_dir:
+    description: "Destination directory within the destination bucket."
+    type: string
+    required: true
+  source_dir:
+    description: "The source directory to upload."
+    type: string
+    required: true
+  excludes:
+    description: "A string defining sync exclusion paths."
+    type: array
+    required: false
+  force_write:
+    description: "A string defining sync exclusion paths."
+    type: string
+    required: false
+  hosts:
+    description: "The remote host where to run the remote-shell-cmd."
+    immutable: true
+    default: "{{ st2kv.system.novastor.ssh.host }}"
+  port:
+    type: 'integer'
+    description: "The ssh port for connecting to the remote host."
+    default: "{{ st2kv.system.novastor.ssh.port | int }}"
+  username:
+    description: "The ssh user name."
+    immutable: true
+    default: "{{ st2kv.system.novastor.ssh.user }}"
+  private_key:
+    description: "The private key to use for ssh."
+    immutable: true
+    default: "{{ st2kv.system.novastor.ssh.key.path }}"  
+  timeout:
+    default: 21600
+  cmd:
+    description: "The command to run on the remote host."
+    immutable: true
+    default: "AWS_ACCESS_KEY_ID={{ st2kv.system.aws.access.key }} AWS_SECRET_ACCESS_KEY={{ st2kv.system.aws.secret.access.key }} {{ st2kv.system.aws.s3sync.script }} -s {{ source_dir }} -d {{ dest_dir }}{% if excludes %}{% for exclude in excludes %} --excludes {{ exclude }}{% endfor %}{% endif %} -b {{ st2kv.system.aws.s3.bucket }} -a {{ st2kv.system.aws.account }}{% if force_write %} --force{% endif %}"
+  sudo:
+    immutable: true
