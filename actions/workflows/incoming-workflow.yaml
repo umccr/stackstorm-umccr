@@ -155,7 +155,7 @@ workflows:
           runfolder_name: "{{ _.runfolder_name }}"
           bcl2fastq_output_path: "{{ _.out_path }}"
         on-success:
-          - post_transfer_start
+          - sync2s3_runfolder
           - post_fastq_checksum_success
         on-error:
           - post_fastq_failure
@@ -164,7 +164,7 @@ workflows:
         action: chatops.post_message
         input:
           channel: "{{ st2kv.system.slack.channel }}"
-          message: "Checksums for FASTQs of *{{ _.runfolder_name }}* successfully created! Starting data sync to HPC."
+          message: "Checksums for FASTQs of *{{ _.runfolder_name }}* successfully created! Starting data sync."
 
       post_fastq_failure:
         action: chatops.post_message
@@ -174,19 +174,9 @@ workflows:
         on-complete:
           - fail
 
-      post_transfer_start:
-        join: all
-        action: chatops.post_message
-        input:
-          channel: "{{ st2kv.system.slack.channel }}"
-          message: "Rsync'ing *{{ _.runfolder_name }}* to HPC ({{ _.destination }})."
-        on-success:
-          - sync2s3_runfolder
-
-
-
 
       sync2s3_runfolder:
+        join: all
         action: umccr.sync2s3
         input:
           source_dir: "{{ _.runfolder_base_path }}/{{ _.runfolder_name }}"
@@ -198,7 +188,7 @@ workflows:
           count: 3
           delay: 30
         on-success:
-          - sync2s3_bcl2fastq_output
+          - sync2s3_bcl2fastq_output_prep
           - post_runfolder_sync2s3_success
         on-error:
           - post_runfolder_sync2s3_error
@@ -217,13 +207,29 @@ workflows:
         on-complete:
           - fail
 
-      sync2s3_bcl2fastq_output:
-        action: umccr.sync2s3
+
+      sync2s3_bcl2fastq_output_prep:
+        action: core.local
         with-items: "out_path in {{ _.out_dirs.split(',') }}"
-        concurrency: 1
+        input:
+          cmd: "basename {{ _.out_path }}"
+        publish:
+            basenames: "<% task(sync2s3_bcl2fastq_output_prep).result.stdout %>"
+        on-success:
+          - sync2s3_bcl2fastq_output
+        on-error:
+          - fail
+
+
+      sync2s3_bcl2fastq_output:
+        join: all
+        action: umccr.sync2s3
+        with-items: 
+          - "basename in {{ _.basenames }}"
+          - "out_path in {{ _.out_dirs.split(',') }}"
         input:
           source_dir: "{{ _.out_path }}"
-          dest_dir: "{{ _.runfolder_name }}/{{ _.out_path }}" # TODO: basename jinja function does not exist!
+          dest_dir: "{{ _.runfolder_name }}/{{ _.basename }}" # TODO: basename jinja function does not exist!
           #dest_dir: "{{ _.runfolder_name }}/{{ _.out_path | basename }}" # TODO: basename jinja function does not exist!
           force_write: "yes, please"
         retry: # retry the command 3 times with 30sec delay in case of error, then fail
@@ -248,9 +254,6 @@ workflows:
           message: "ERROR: Failed to S3 sync bcl2fastq output for runfolder *{{ _.runfolder_name }}*!"
         on-complete:
           - fail
-
-
-
 
 
       rsync_runfolder:
