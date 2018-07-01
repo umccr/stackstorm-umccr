@@ -1,4 +1,6 @@
 #!/bin/bash
+set -e
+set -o pipefail
 
 script_name=$(basename $0)
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"

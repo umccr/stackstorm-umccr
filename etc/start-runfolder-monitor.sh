@@ -1,5 +1,7 @@
 #!/bin/bash
-# This is configured to monitor /mnt/MDHS-Clinical/Genomics/Baymax and expose it's API on port 8889
+set -e
+set -o pipefail
+
 
 runfolder_base="/storage/shared/raw/Baymax"
 status_base="/opt/Pipeline/prod/runfolder-status"

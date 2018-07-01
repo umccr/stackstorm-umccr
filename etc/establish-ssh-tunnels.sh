@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 # create a tunnel for the arteria runfolder service on port 8888
 autossh -M 30000 -f -N -R 8888:0.0.0.0:8888 ubuntu@stackstorm.prod.umccr.org &

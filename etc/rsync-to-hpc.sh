@@ -1,4 +1,6 @@
 #!/bin/bash
+set -e
+set -o pipefail
 
 # TODO: make async, i.e. webhook callback once finished
 # TODO: parallelise (for example sync each fastq file separately?)
