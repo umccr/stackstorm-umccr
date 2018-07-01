@@ -1,4 +1,6 @@
 #!/bin/bash
+set -e
+set -o pipefail
 
 # TODO: change hard coded exclude paths into parameters
 # TODO: make more generic

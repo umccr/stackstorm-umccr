@@ -1,4 +1,7 @@
 #!/bin/bash
+set -e
+set -o pipefail
+
 
 runfolder_base="/storage/shared/dev/Baymax"
 status_base="/opt/Pipeline/dev/runfolder-status"

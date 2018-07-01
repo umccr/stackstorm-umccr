@@ -1,4 +1,6 @@
 #!/bin/bash
+set -e
+set -o pipefail
 
 # NOTE: endpont URL for webhook is hard coded and therefore fixed to the dev server.
 
