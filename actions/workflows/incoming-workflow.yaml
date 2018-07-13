@@ -351,6 +351,7 @@ workflows:
           group: "punim0010"
           recursive: "yes, please"
         on-success:
+          - update_permissions_spartan
           - post_update_group_spartan_success
         on-error:
           - post_update_group_spartan_error
@@ -367,5 +368,35 @@ workflows:
         input:
           channel: "{{ st2kv.system.slack.channel }}"
           message: "ERROR changing user group of *{{ _.runfolder_name }}* to _punim0010_ on SPARTAN."
+        on-complete:
+          - fail
+
+
+      # change the linux permissions for the generated resources on Spartan
+      update_permissions_spartan:
+        action: umccr.chmod
+        input:
+          files:
+            - "{{ _.hpc_dest_base_path }}/Fastq/{{ _.runfolder_name }}"
+            - "{{ _.hpc_dest_base_path }}/Ready/{{ _.runfolder_name }}"
+          permission: "g+w"
+          recursive: "yes, please"
+        on-success:
+          - post_update_permissions_spartan_success
+        on-error:
+          - post_update_permissions_spartan_error
+
+
+      post_update_permissions_spartan_success:
+        action: chatops.post_message
+        input:
+          channel: "{{ st2kv.system.slack.channel }}"
+          message: "Successfully changed permissions of *{{ _.runfolder_name }}* to 'g+w' on SPARTAN."
+
+      post_update_permissions_spartan_error:
+        action: chatops.post_message
+        input:
+          channel: "{{ st2kv.system.slack.channel }}"
+          message: "ERROR changing permissions of *{{ _.runfolder_name }}* to 'g+w' on SPARTAN."
         on-complete:
           - fail
