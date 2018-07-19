@@ -143,7 +143,7 @@ do
 done
 # TODO: find a better place to store the log file
 # TODO: perhaps add a timestamp to the log file name
-cmd+=" $source_path s3://$bucket/$dest_path > ${log_file_name}.log"
+cmd+=" $source_path s3://$bucket/$dest_path > $DIR/${log_file_name}.log"
 
 write_log "INFO: Running: $cmd"
 #eval "$cmd"
