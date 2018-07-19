@@ -136,14 +136,14 @@ aws configure set default.s3.multipart_chunksize 16MB
 aws configure set default.s3.max_bandwidth 800MB/s
 
 # build the command
-cmd="aws s3 sync --no-progress --dryrun --no-follow-symlinks"
+cmd="aws s3 sync --no-progress"
 for i in "${excludes[@]}"
 do
   cmd+=" --exclude $i"
 done
 # TODO: find a better place to store the log file
 # TODO: perhaps add a timestamp to the log file name
-cmd+=" $source_path s3://$bucket/$dest_path > ${log_file_name}.log"
+cmd+=" $source_path s3://$bucket/$dest_path > $DIR/${log_file_name}.log"
 
 write_log "INFO: Running: $cmd"
 eval "$cmd"
