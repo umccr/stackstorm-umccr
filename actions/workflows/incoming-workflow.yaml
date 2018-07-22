@@ -182,8 +182,8 @@ workflows:
           source_dir: "{{ _.runfolder_base_path }}/{{ _.runfolder_name }}"
           dest_dir: "{{ _.runfolder_name }}"
           excludes:
-            - '/Data/*'
-            - '/Thumbnail_Images/*'
+            - 'Data/*'
+            - 'Thumbnail_Images/*'
         retry: # retry the command 3 times with 30sec delay in case of error, then fail
           count: 3
           delay: 30
