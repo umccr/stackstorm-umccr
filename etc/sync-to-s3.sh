@@ -6,9 +6,8 @@ script=$(basename $0)
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 function write_log {
   msg="$(date +'%Y-%m-%d %H:%M:%S.%N') $script: $1"
-  # echo "$msg" > /dev/udp/localhost/9999
-  # echo "$msg" >> $DIR/${script}.log
-  echo "$msg"
+  echo "$msg" > /dev/udp/localhost/9999
+  echo "$msg" >> $DIR/${script}.log
 }
 write_log "INFO: Invocation with parameters: $*"
 
