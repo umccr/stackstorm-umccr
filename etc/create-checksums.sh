@@ -1,4 +1,6 @@
 #!/bin/bash
+set -e
+set -o pipefail
 
 # TODO: change hard coded exclude paths into parameters
 # TODO: make more generic
@@ -6,9 +8,9 @@
 # TODO: create .md5 file per input file
 # TODO: make async. i.e. webhook callback once finished
 
-#HASHFUNC="md5sum"
-HASHFUNC="xxh64sum"
-THREADS=40
+HASHFUNC="md5sum"
+#HASHFUNC="xxh64sum"
+THREADS=5
 
 script=$(basename $0)
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"

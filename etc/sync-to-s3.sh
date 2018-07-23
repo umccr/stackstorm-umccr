@@ -20,7 +20,8 @@ if test "$#" -lt 8; then
   echo "  - The destination path [-d|--dest-dir]"
   echo "  - The source path [-s|--source-dir]"
   echo "  - The AWS account number to upload to [-a|--account]"
-  echo "  - (optional) The sync exclusions, in aws syntax [-x|--excludes]"
+  echo "  - (optional) The sync exclusions, in aws syntax [-e|--excludes]"
+  echo "  - (optional) Force write to output directory, even if it does not match the input name [-f|--force]"
   exit -1
 fi
 
@@ -128,25 +129,26 @@ if [ $ret_code != 0 ]; then
 fi
 
 # configuring AWS S3 command
-aws configure set default.s3.max_concurrent_requests 40
+aws configure set default.s3.max_concurrent_requests 10
 aws configure set default.s3.max_queue_size 10000
 aws configure set default.s3.multipart_threshold 64MB
 aws configure set default.s3.multipart_chunksize 16MB
-aws configure set default.s3.max_bandwidth 500MB/s
+aws configure set default.s3.max_bandwidth 800MB/s
 
 # build the command
-cmd="aws s3 sync --no-progress --dryrun --no-follow-symlinks"
+cmd="aws s3 sync --no-progress --dryrun"
 for i in "${excludes[@]}"
 do
   cmd+=" --exclude $i"
 done
 # TODO: find a better place to store the log file
 # TODO: perhaps add a timestamp to the log file name
-cmd+=" $source_path s3://$bucket/$dest_path > ${log_file_name}.log"
+cmd+=" $source_path s3://$bucket/$dest_path > $DIR/s3sync-logs/${log_file_name}.log"
 
 write_log "INFO: Running: $cmd"
-eval "$cmd"
+#eval "$cmd"
+echo "$cmd"
 
-# TODO: add wbhook callback to ST2
+# TODO: add wbhook callback to ST2 to make async
 
 write_log "INFO: All done."

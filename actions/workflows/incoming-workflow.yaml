@@ -18,6 +18,7 @@ workflows:
     input:
       - runfolder_name
       - out_dirs
+      - destination
 
     tasks:
       # Start: notify users of a new runfolder
@@ -97,6 +98,9 @@ workflows:
     input:
       - runfolder_name
       - out_dirs
+      - destination
+      - runfolder_base_path: "{{ st2kv.system.runfolder.base.path }}"
+      - hpc_dest_base_path: "{{ st2kv.system.pipeline.data.base.path }}"
 
     tasks:
       # Notify of workflow start
@@ -151,7 +155,7 @@ workflows:
           runfolder_name: "{{ _.runfolder_name }}"
           bcl2fastq_output_path: "{{ _.out_path }}"
         on-success:
-          - start_transfer
+          - sync2s3_runfolder
           - post_fastq_checksum_success
         on-error:
           - post_fastq_failure
@@ -160,7 +164,7 @@ workflows:
         action: chatops.post_message
         input:
           channel: "{{ st2kv.system.slack.channel }}"
-          message: "Checksums for FASTQs of *{{ _.runfolder_name }}* successfully created! Starting data sync to HPC."
+          message: "Checksums for FASTQs of *{{ _.runfolder_name }}* successfully created! Starting data sync."
 
       post_fastq_failure:
         action: chatops.post_message
@@ -170,33 +174,87 @@ workflows:
         on-complete:
           - fail
 
-      start_transfer:
+
+      sync2s3_runfolder:
         join: all
-        workflow: transfer
+        action: umccr.sync2s3
         input:
-          runfolder_name: "{{ _.runfolder_name }}"
-          out_dirs: "{{ _.out_dirs }}"
+          source_dir: "{{ _.runfolder_base_path }}/{{ _.runfolder_name }}"
+          dest_dir: "{{ _.runfolder_name }}"
+          excludes:
+            - 'Data/*'
+            - 'Thumbnail_Images/*'
+        retry: # retry the command 3 times with 30sec delay in case of error, then fail
+          count: 3
+          delay: 30
+        on-success:
+          - sync2s3_bcl2fastq_output_prep
+          - post_runfolder_sync2s3_success
+        on-error:
+          - post_runfolder_sync2s3_error
 
-
-  transfer:
-    type: direct
-    input:
-      - runfolder_name
-      - out_dirs
-      - destination: "{{ st2kv.system.hpc.id }}"
-      - runfolder_base_path: "{{ st2kv.system.runfolder.base.path }}"
-      - hpc_dest_base_path: "{{ st2kv.system.pipeline.data.base.path }}"
-
-
-    tasks:
-      # Notify of workflow start
-      post_transfer_start:
+      post_runfolder_sync2s3_success:
         action: chatops.post_message
         input:
           channel: "{{ st2kv.system.slack.channel }}"
-          message: "Rsync'ing *{{ _.runfolder_name }}* to HPC ({{ _.destination }})."
+          message: "Runfolder *{{ _.runfolder_name }}* successfully synced to S3. Syncing bcl2fastq output..."
+
+      post_runfolder_sync2s3_error:
+        action: chatops.post_message
+        input:
+          channel: "{{ st2kv.system.slack.channel }}"
+          message: "ERROR: Runfolder *{{ _.runfolder_name }}* S3 sync failed!"
+        on-complete:
+          - fail
+
+
+      sync2s3_bcl2fastq_output_prep:
+        action: core.local
+        with-items: "out_path in {{ _.out_dirs.split(',') }}"
+        input:
+          cmd: "basename {{ _.out_path }}"
+        publish:
+            basenames: "<% task(sync2s3_bcl2fastq_output_prep).result.stdout %>"
+        on-success:
+          - sync2s3_bcl2fastq_output
+        on-error:
+          - fail
+
+
+      sync2s3_bcl2fastq_output:
+        join: all
+        action: umccr.sync2s3
+        with-items: 
+          - "basename in {{ _.basenames }}"
+          - "out_path in {{ _.out_dirs.split(',') }}"
+        input:
+          source_dir: "{{ _.out_path }}"
+          dest_dir: "{{ _.runfolder_name }}/{{ _.basename }}" # TODO: basename jinja function does not exist!
+          #dest_dir: "{{ _.runfolder_name }}/{{ _.out_path | basename }}" # TODO: basename jinja function does not exist!
+          force_write: "yes, please"
+        retry: # retry the command 3 times with 30sec delay in case of error, then fail
+          count: 3
+          delay: 30
         on-success:
           - rsync_runfolder
+          - post_bcl2fastq_sync2s3_success
+        on-error:
+          - post_bcl2fastq_sync2s3_error
+
+      post_bcl2fastq_sync2s3_success:
+        action: chatops.post_message
+        input:
+          channel: "{{ st2kv.system.slack.channel }}"
+          message: "bcl2fastq output for runfolder *{{ _.runfolder_name }}* successfully synced to S3."
+
+      post_bcl2fastq_sync2s3_error:
+        action: chatops.post_message
+        input:
+          channel: "{{ st2kv.system.slack.channel }}"
+          message: "ERROR: Failed to S3 sync bcl2fastq output for runfolder *{{ _.runfolder_name }}*!"
+        on-complete:
+          - fail
+
 
       rsync_runfolder:
         action: umccr.rsync2hpc
@@ -258,7 +316,6 @@ workflows:
           - fail
 
       # create the symlink in the Ready folder as flag that the data in now in place and ready to be used
-      # TODO: The update_group_spartan path should only be entered if the destination host is 'SPARTAN'
       create_ready_link:
         join: all
         action: umccr.ready_link
@@ -266,7 +323,7 @@ workflows:
           runfolder_name: "{{ _.runfolder_name }}"
         on-success:
           - post_ready_link_success
-          - update_group_spartan # TODO: make conditional
+          - update_group_spartan: "{{ _.destination == 'SPARTAN' }}"
         on-error:
           - post_ready_link_error
 
@@ -285,19 +342,20 @@ workflows:
           - fail
 
       # change the linux group for the generated resources on Spartan
-      # NOTE: no explicit pack action, as this is just a fix for SPARTAN, not a generic solution
       update_group_spartan:
-        action: core.remote
+        action: umccr.chgrp
         input:
-          cmd: "ssh brainstorm@spartan.hpc.unimelb.edu.au 'chown -R :punim0010 /data/cephfs/punim0010/data/Pipeline/Fastq/{{ _.runfolder_name }} /data/cephfs/punim0010/data/Pipeline/Ready/{{ _.runfolder_name }}'"
-          hosts: "{{ st2kv.system.novastor.ssh.host }}"
-          port: "{{ st2kv.system.novastor.ssh.port | int }}"
-          username: "{{ st2kv.system.novastor.ssh.user }}"
-          private_key: "{{ st2kv.system.novastor.ssh.key.path }}"
+          files: 
+            - "{{ _.hpc_dest_base_path }}/Fastq/{{ _.runfolder_name }}"
+            - "{{ _.hpc_dest_base_path }}/Ready/{{ _.runfolder_name }}"
+          group: "punim0010"
+          recursive: "yes, please"
         on-success:
+          - update_permissions_spartan
           - post_update_group_spartan_success
         on-error:
           - post_update_group_spartan_error
+
 
       post_update_group_spartan_success:
         action: chatops.post_message
@@ -310,5 +368,35 @@ workflows:
         input:
           channel: "{{ st2kv.system.slack.channel }}"
           message: "ERROR changing user group of *{{ _.runfolder_name }}* to _punim0010_ on SPARTAN."
+        on-complete:
+          - fail
+
+
+      # change the linux permissions for the generated resources on Spartan
+      update_permissions_spartan:
+        action: umccr.chmod
+        input:
+          files:
+            - "{{ _.hpc_dest_base_path }}/Fastq/{{ _.runfolder_name }}"
+            - "{{ _.hpc_dest_base_path }}/Ready/{{ _.runfolder_name }}"
+          permission: "g+w"
+          recursive: "yes, please"
+        on-success:
+          - post_update_permissions_spartan_success
+        on-error:
+          - post_update_permissions_spartan_error
+
+
+      post_update_permissions_spartan_success:
+        action: chatops.post_message
+        input:
+          channel: "{{ st2kv.system.slack.channel }}"
+          message: "Successfully changed permissions of *{{ _.runfolder_name }}* to 'g+w' on SPARTAN."
+
+      post_update_permissions_spartan_error:
+        action: chatops.post_message
+        input:
+          channel: "{{ st2kv.system.slack.channel }}"
+          message: "ERROR changing permissions of *{{ _.runfolder_name }}* to 'g+w' on SPARTAN."
         on-complete:
           - fail
