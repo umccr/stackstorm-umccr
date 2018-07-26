@@ -2,13 +2,24 @@
 set -e
 set -o pipefail
 
+if test -z "$DEPLOY_ENV"; then
+    echo "DEPLOY_ENV is not set! Set it to either 'dev' or 'prod'."
+    exit 1
+fi
+
 script=$(basename $0)
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 function write_log {
   msg="$(date +'%Y-%m-%d %H:%M:%S.%N') $script: $1"
-  echo "$msg" > /dev/udp/localhost/9999
   echo "$msg" >> $DIR/${script}.log
+  if test "$DEPLOY_ENV" = "prod"; then
+    echo "$msg" > /dev/udp/localhost/9999
+  else
+    echo "$msg"
+  fi
 }
+
 write_log "INFO: Invocation with parameters: $*"
 
 if test "$#" -lt 8; then
@@ -106,8 +117,6 @@ then
   exit -1
 fi
 
-log_file_name=$(echo "$dest_path" | tr \/ _)
-
 # attempt to assume the ops admin role in dev
 export AWS_REGION=ap-southeast-2
 
@@ -134,19 +143,26 @@ aws configure set default.s3.multipart_threshold 64MB
 aws configure set default.s3.multipart_chunksize 16MB
 aws configure set default.s3.max_bandwidth 800MB/s
 
+
+# TODO: find a better place to store the log file
+# TODO: perhaps add a timestamp to the log file name
+log_file_name=$(echo "$dest_path" | tr \/ _)
+
 # build the command
-cmd="aws s3 sync --no-progress"
+if test "$DEPLOY_ENV" = "prod"; then
+  cmd="aws s3 sync --no-progress"
+else
+  cmd="aws s3 sync --no-progress --dryrun"
+fi
 for i in "${excludes[@]}"
 do
   cmd+=" --exclude $i"
 done
-# TODO: find a better place to store the log file
-# TODO: perhaps add a timestamp to the log file name
-cmd+=" $source_path s3://$bucket/$dest_path > $DIR/s3sync-logs/${log_file_name}.log"
+cmd+=" $source_path s3://$bucket/$dest_path >> $DIR/s3sync-logs/${log_file_name}.log"
 
 write_log "INFO: Running: $cmd"
 eval "$cmd"
 
-# TODO: add wbhook callback to ST2 to make async
+# TODO: add webhook callback to ST2 to make async
 
 write_log "INFO: All done."

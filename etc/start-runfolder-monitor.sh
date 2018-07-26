@@ -2,13 +2,38 @@
 set -e
 set -o pipefail
 
+if test -z "$DEPLOY_ENV"; then
+    echo "DEPLOY_ENV is not set! Set it to either 'dev' or 'prod'."
+    exit 1
+fi
 
-runfolder_base="/storage/shared/raw/Baymax"
-status_base="/opt/Pipeline/prod/runfolder-status"
-port=8888
-tag="storage-shared-monitor"
+script=$(basename $0)
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+function write_log {
+  msg="$(date +'%Y-%m-%d %H:%M:%S.%N') $script: $1"
+  echo "$msg" >> $DIR/${script}.log
+  if test "$DEPLOY_ENV" = "prod"; then
+    echo "$msg" > /dev/udp/localhost/9999
+  else
+    echo "$msg"
+  fi
+}
+
+
+if test "$DEPLOY_ENV" = "prod"; then
+    runfolder_base="/storage/shared/raw/Baymax"
+    status_base="/opt/Pipeline/prod/runfolder-status"
+    port=8888
+    tag="storage-shared-monitor"
+else
+    runfolder_base="/storage/shared/dev/Baymax"
+    status_base="/opt/Pipeline/dev/runfolder-status"
+    port=8899
+    tag="storage-shared-monitor-dev"
+fi
+
 timestamp="$(date +"%Y%m%d%H%M")"
-
 tmpfile=$(mktemp /tmp/app.config.XXXXX)
 
 cat > $tmpfile <<- EOF
@@ -26,18 +51,15 @@ completed_marker_file: SequenceComplete.txt
 state_base_path: /opt/state-folder
 EOF
 
-# TODO: log execution
 
 # configure mount points:
-# 1. the path to monitor for runfolders
+# 1. the runfolder base path to monitor
 # 2. the folder where to store the state information
 # 3. the custom app.config to use
-docker run -d --name=$tag-$timestamp --rm -p $port:80 \
-        -v $runfolder_base:$runfolder_base:ro \
-        -v $status_base:/opt/state-folder \
-        -v $tmpfile:/opt/runfolder-service/config/app.config \
-        umccr/arteria-runfolder-docker:latest
+cmd="docker run -d --name=$tag-$timestamp --rm -p $port:80 -v $runfolder_base:$runfolder_base:ro -v $status_base:/opt/state-folder -v $tmpfile:/opt/runfolder-service/config/app.config umccr/arteria-runfolder-docker:latest"
+write_log "INFO: Running: $cmd"
+eval "$cmd"
 
 rm $tmpfile
 # Test the service with:
-# curl localhost:8888/api/1.0/runfolders?state=* | python -m json.tool
+# curl localhost:$port/api/1.0/runfolders?state=* | python -m json.tool

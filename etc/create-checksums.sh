@@ -8,15 +8,28 @@ set -o pipefail
 # TODO: create .md5 file per input file
 # TODO: make async. i.e. webhook callback once finished
 
-THREADS=10
+HASHFUNC="md5sum"
+#HASHFUNC="xxh64sum"
+THREADS=5
+
+if test -z "$DEPLOY_ENV"; then
+    echo "DEPLOY_ENV is not set! Set it to either 'dev' or 'prod'."
+    exit 1
+fi
 
 script=$(basename $0)
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 function write_log {
   msg="$(date +'%Y-%m-%d %H:%M:%S.%N') $script: $1"
-  echo "$msg" > /dev/udp/localhost/9999
   echo "$msg" >> $DIR/${script}.log
+  if test "$DEPLOY_ENV" = "prod"; then
+    echo "$msg" > /dev/udp/localhost/9999
+  else
+    echo "$msg"
+  fi
 }
+
 write_log "INFO: Invocation with parameters: $*"
 
 use_case="$1"
@@ -37,14 +50,22 @@ fi
 
 if test "$use_case" = 'bcl2fastq'
 then
-  cmd="find . -not \( -path ./bcl2fastq.md5 -prune \) -type f | parallel -j $THREADS md5sum > ./bcl2fastq.md5"
+  cmd="find . -not \( -path ./bcl2fastq.md5 -prune \) -type f | parallel -j $THREADS $HASHFUNC > ./bcl2fastq.$HASHFUNC"
   write_log "INFO: Running: $cmd"
-  eval "$cmd"
+  if test "$DEPLOY_ENV" = "prod"; then
+    eval "$cmd"
+  else
+    echo "$cmd"
+  fi
 elif test "$use_case" = 'runfolder'
 then
-  cmd="find . -not \( -path ./Thumbnail_Images -prune \) -not \( -path ./Data -prune \) -not \( -path ./runfolder.md5 -prune \) -type f | parallel -j $THREADS md5sum > ./runfolder.md5"
+  cmd="find . -not \( -path ./Thumbnail_Images -prune \) -not \( -path ./Data -prune \) -not \( -path ./runfolder.md5 -prune \) -type f | parallel -j $THREADS $HASHFUNC > ./runfolder.$HASHFUNC"
   write_log "INFO: Running: $cmd"
-  eval "$cmd"
+  if test "$DEPLOY_ENV" = "prod"; then
+    eval "$cmd"
+  else
+    echo "$cmd"
+  fi
 else
   write_log "ERROR: Not a valid use case: $use_case"
   (>&2 echo "ERROR: Not a valid use case: $use_case")

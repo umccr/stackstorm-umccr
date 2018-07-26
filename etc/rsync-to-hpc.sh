@@ -5,13 +5,24 @@ set -o pipefail
 # TODO: make async, i.e. webhook callback once finished
 # TODO: parallelise (for example sync each fastq file separately?)
 
+if test -z "$DEPLOY_ENV"; then
+    echo "DEPLOY_ENV is not set! Set it to either 'dev' or 'prod'."
+    exit 1
+fi
+
 script=$(basename $0)
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 function write_log {
   msg="$(date +'%Y-%m-%d %H:%M:%S.%N') $script: $1"
-  echo "$msg" > /dev/udp/localhost/9999
   echo "$msg" >> $DIR/${script}.log
+  if test "$DEPLOY_ENV" = "prod"; then
+    echo "$msg" > /dev/udp/localhost/9999
+  else
+    echo "$msg"
+  fi
 }
+
 write_log "INFO: Invocation with parameters: $*"
 
 if test "$#" -lt 8; then
@@ -97,6 +108,10 @@ fi
 
 cmd="rsync -avh $excludes $source_path -e \"ssh\" $ssh_user@$dest_host:$dest_path"
 write_log "INFO: Running: $cmd"
-eval "$cmd"
+if test "$DEPLOY_ENV" = "prod"; then
+  eval "$cmd"
+else
+  echo "$cmd"
+fi
 
 write_log "INFO: All done."
