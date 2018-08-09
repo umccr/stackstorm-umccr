@@ -36,6 +36,6 @@ parameters:
     description: "The command to run on the remote host."
     immutable: true
     # default: "cd {{ runfolder_base_path }}/{{ runfolder_name }} && find . -not \\( -path ./Thumbnail_Images -prune \\) -not \\( -path ./Data -prune \\) -not \\( -path ./runfolder.md5 -prune \\) -type f -exec md5sum '{}' \\; > ./runfolder.md5"
-    default: "{{ st2kv.system.checksum.script }} runfolder {{ runfolder_base_path }}/{{ runfolder_name }}"
+    default: "DEPLOY_ENV={{ st2kv.system.deploy.env }} {{ st2kv.system.checksum.script }} runfolder {{ runfolder_base_path }}/{{ runfolder_name }}"
   sudo:
     immutable: true

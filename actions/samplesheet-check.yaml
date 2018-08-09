@@ -34,6 +34,6 @@ parameters:
   cmd:
     description: "The command to run on the remote host."
     immutable: true
-    default: "python {{ st2kv.system.samplesheet.check.script }} {{ st2kv.system.runfolder.base.path }}/{{ runfolder_name }}/{{ samplesheet_name }}"
+    default: "DEPLOY_ENV={{ st2kv.system.deploy.env }} python {{ st2kv.system.samplesheet.check.script }} {{ st2kv.system.runfolder.base.path }}/{{ runfolder_name }}/{{ samplesheet_name }}"
   sudo:
     immutable: true

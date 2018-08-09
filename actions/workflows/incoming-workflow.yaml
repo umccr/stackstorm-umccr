@@ -17,7 +17,7 @@ workflows:
     type: direct
     input:
       - runfolder_name
-      - out_dirs
+      - out_dir
       - destination
 
     tasks:
@@ -70,7 +70,6 @@ workflows:
         action: umccr.bcl2fastq_start
         input:
           runfolder_name: "{{ _.runfolder_name }}"
-          extra_params: "--no-lane-splitting"
         on-success:
           - post_bcl2fastq_start_success
         on-error:
@@ -97,7 +96,7 @@ workflows:
     type: direct
     input:
       - runfolder_name
-      - out_dirs
+      - out_dir
       - destination
       - runfolder_base_path: "{{ st2kv.system.runfolder.base.path }}"
       - hpc_dest_base_path: "{{ st2kv.system.pipeline.data.base.path }}"
@@ -128,8 +127,6 @@ workflows:
         input:
           channel: "{{ st2kv.system.slack.channel }}"
           message: "Checksums for runfolder *{{ _.runfolder_name }}* successfully created! Creating checksums for FASTQs..."
-        on-success:
-          - post_bcl2bcl2fastq_output_path
 
       post_runfolder_checksum_failure:
         action: chatops.post_message
@@ -139,21 +136,12 @@ workflows:
         on-complete:
           - fail
 
-      post_bcl2bcl2fastq_output_path:
-        action: chatops.post_message
-        with-items: "msg in {{ _.out_dirs.split(',') }}"
-        input:
-          channel: "{{ st2kv.system.slack.channel }}"
-          message: "bcl2fastq output directory: *{{ _.msg }}*"
-
       # create the checksums for the bcl2fastq output
       create_fastq_checksums:
         action: umccr.bcl2fastq_checksums
-        with-items: "out_path in {{ _.out_dirs.split(',') }}"
-        concurrency: 1
         input:
           runfolder_name: "{{ _.runfolder_name }}"
-          bcl2fastq_output_path: "{{ _.out_path }}"
+          bcl2fastq_output_path: "{{ _.out_dir }}"
         on-success:
           - sync2s3_runfolder
           - post_fastq_checksum_success
@@ -210,11 +198,10 @@ workflows:
 
       sync2s3_bcl2fastq_output_prep:
         action: core.local
-        with-items: "out_path in {{ _.out_dirs.split(',') }}"
         input:
-          cmd: "basename {{ _.out_path }}"
+          cmd: "basename {{ _.out_dir }}"
         publish:
-            basenames: "<% task(sync2s3_bcl2fastq_output_prep).result.stdout %>"
+            basename: "<% task(sync2s3_bcl2fastq_output_prep).result.stdout %>"
         on-success:
           - sync2s3_bcl2fastq_output
         on-error:
@@ -224,11 +211,8 @@ workflows:
       sync2s3_bcl2fastq_output:
         join: all
         action: umccr.sync2s3
-        with-items: 
-          - "basename in {{ _.basenames }}"
-          - "out_path in {{ _.out_dirs.split(',') }}"
         input:
-          source_dir: "{{ _.out_path }}"
+          source_dir: "{{ _.out_dir }}"
           dest_dir: "{{ _.runfolder_name }}/{{ _.basename }}" # TODO: basename jinja function does not exist!
           #dest_dir: "{{ _.runfolder_name }}/{{ _.out_path | basename }}" # TODO: basename jinja function does not exist!
           force_write: "yes, please"
@@ -287,10 +271,8 @@ workflows:
 
       rsync_bcl2fastq_output:
         action: umccr.rsync2hpc
-        with-items: "out_path in {{ _.out_dirs.split(',') }}"
-        concurrency: 1
         input:
-          source_path: "{{ _.out_path }}"
+          source_path: "{{ _.out_dir }}"
           dest_path: "{{ _.hpc_dest_base_path }}/Fastq/{{ _.runfolder_name }}"
         retry: # retry the command 3 times with 30sec delay in case of error, then fail
           count: 3

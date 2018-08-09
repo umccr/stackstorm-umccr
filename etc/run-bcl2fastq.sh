@@ -2,18 +2,21 @@
 set -e
 set -o pipefail
 
+script_name=$(basename $0)
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+lock_dir="$DIR/${script_name}_lock"
+lock_check_sleep_time=300
+script_pid=$$
+
+FLAG_WGS="--no-lane-splitting"
+FLAG_10X="--create-fastq-for-index-reads --minimum-trimmed-read-length=8 --mask-short-adapter-reads=8 --ignore-missing-positions --ignore-missing-controls --ignore-missing-filter --ignore-missing-bcls"
+
 # NOTE: endpont URL for webhook is hard coded and therefore fixed to the dev server.
 
 if test -z "$DEPLOY_ENV"; then
     echo "DEPLOY_ENV is not set! Set it to either 'dev' or 'prod'."
     exit 1
 fi
-
-script_name=$(basename $0)
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-lock_dir="$DIR/${script_name}_lock"
-lock_check_sleep_time=300
-script_pid=$$
 
 function write_log {
   msg="$(date +'%Y-%m-%d %H:%M:%S.%N') $script: $1"
@@ -128,25 +131,33 @@ num_custom_samplesheets=${#custom_samplesheets[@]}
 out_dirs=() # collect the generated output directories, as they are needed in further pipeline steps
 if test "$num_custom_samplesheets" -gt 0; then
 
-  write_log "INFO: Custom sample sheets detected."
+  write_log "INFO: Custom sample sheets detected. Starting conversion."
 
   for samplesheet in "${custom_samplesheets[@]}"; do
     write_log "INFO: Processing sample sheet: $samplesheet"
     custom_tag=${samplesheet#*SampleSheet.csv.}
     write_log "DEBUG: Extracted sample sheet tag: $custom_tag"
-    custom_output_dir="${output_dir}_$custom_tag"
-    out_dirs+=("$custom_output_dir")
-
 
     # make sure the output directory exists
-    mkdir_command="mkdir -p \"$custom_output_dir\""
+    mkdir_command="mkdir -p \"$output_dir\""
     write_log "INFO: creating output dir: $mkdir_command"
     eval "$mkdir_command"
 
+    if [[ $custom_tag = *"10X"* ]]; then
+      write_log "INFO: 10X dataset detected."
+      additional_params="$FLAG_10X"
+    elif [[ $custom_tag = *"truseq"* ]]; then
+      write_log "INFO: truseq dataset detected."
+      additional_params="$FLAG_WGS"
+    else
+      write_log "INFO: Neither 10X nor truseq detected! Running default."
+      additional_params=""
+    fi
     # run the actual conversion
-    cmd="docker run --rm -v $runfolder_dir:$runfolder_dir:ro -v $custom_output_dir:$custom_output_dir umccr/bcl2fastq:$bcl2fastq_version -R $runfolder_dir -o $custom_output_dir ${optional_args[*]} --sample-sheet $samplesheet >& $custom_output_dir/${runfolder_name}.log"
+    log_file="$output_dir/${runfolder_name}_${custom_tag}.log"
+    cmd="docker run --rm -v $runfolder_dir:$runfolder_dir:ro -v $output_dir:$output_dir umccr/bcl2fastq:$bcl2fastq_version -R $runfolder_dir -o $output_dir --stats-dir=$output_dir/Stats_${custom_tag} --reports-dir=$output_dir/Reports_${custom_tag} ${optional_args[*]} $additional_params --sample-sheet $samplesheet >& $log_file"
     write_log "INFO: running command: $cmd"
-    write_log "INFO: writing bcl2fastq logs to: $custom_output_dir/${runfolder_name}.log"
+    write_log "INFO: writing bcl2fastq logs to: $log_file"
     if test "$DEPLOY_ENV" = "prod"; then
       eval "$cmd"
       ret_code=$?
@@ -164,53 +175,28 @@ if test "$num_custom_samplesheets" -gt 0; then
       write_log "INFO: bcl2fastq conversion of $samplesheet succeeded."
     fi
 
+    # clean-up undetermined
+    write_log "INFO: Cleaning up undetermined fastq files."
+    cmd="rm $output_dir/Undetermined*"
+    if test "$DEPLOY_ENV" = "prod"; then
+      eval "$cmd"
+    else
+      echo "$cmd"
+    fi
+
   done
 
 else
-  write_log "INFO: No custom sample sheet. Assuming default."
-
-  # make sure the output directory exists
-  out_dirs+=("$output_dir")
-  mkdir_command="mkdir -p $output_dir"
-  write_log "INFO: creating output dir: $mkdir_command"
-  eval "$mkdir_command"
-
-  # run the actual conversion
-  cmd="docker run --rm -v $runfolder_dir:$runfolder_dir:ro -v $output_dir:$output_dir umccr/bcl2fastq:$bcl2fastq_version -R $runfolder_dir -o $output_dir ${optional_args[*]} >& $output_dir/${runfolder_name}.log"
-  write_log "INFO: running command: $cmd"
-  write_log "INFO: writing bcl2fastq logs to: $output_dir/${runfolder_name}.log"
-  if test "$DEPLOY_ENV" = "prod"; then
-    eval "$cmd"
-    ret_code=$?
-  else
-    echo "$cmd"
-    ret_code=0
-  fi
-
-
-  if [ $ret_code != 0 ]; then
-    status="error"
-    write_log "ERROR: bcl2fastq conversion failed with exit code: $ret_code"
-  else
-    status="done"
-    write_log "INFO: bcl2fastq conversion succeeded"
-  fi
-
+  write_log "ERROR: No custom sample sheet found. Make sure one exists!"
 fi
 
 # not that the conversion is finished we can release the resources
 write_log "INFO: releasing lock"
 rm -rf $lock_dir
 
-bcl2fastq_output_dirs=""
-for path in "${out_dirs[@]}"; do
-  bcl2fastq_output_dirs="${bcl2fastq_output_dirs}${path},"
-done
-bcl2fastq_output_dirs="${bcl2fastq_output_dirs::-1}"
-
 
 # finally notify StackStorm of completion
-webhook="curl --insecure -X POST https://stackstorm.dev.umccr.org/api/v1/webhooks/st2 -H \"St2-Api-Key: $st2_api_key\" -H \"Content-Type: application/json\" --data '{\"trigger\": \"umccr.bcl2fastq\", \"payload\": {\"status\": \"$status\", \"runfolder_name\": \"$runfolder_name\", \"runfolder\": \"$runfolder_dir\", \"out_dirs\": \"${bcl2fastq_output_dirs}\"}}'"
+webhook="curl --insecure -X POST https://stackstorm.dev.umccr.org/api/v1/webhooks/st2 -H \"St2-Api-Key: $st2_api_key\" -H \"Content-Type: application/json\" --data '{\"trigger\": \"umccr.bcl2fastq\", \"payload\": {\"status\": \"$status\", \"runfolder_name\": \"$runfolder_name\", \"runfolder\": \"$runfolder_dir\", \"out_dir\": \"${output_dir}\"}}'"
 write_log "INFO: calling home: $webhook"
 eval "$webhook"
 

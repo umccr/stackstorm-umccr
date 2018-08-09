@@ -43,6 +43,6 @@ parameters:
   cmd:
     description: "The command to run on the remote host."
     immutable: true
-    default: "nohup {{ st2kv.system.bcl2fastq.run.script }} -R {{ runfolder_dir }} -n {{ runfolder_name }} -o {{ output_dir }} -k {{ st2kv.system.api.key.webhook }} {% if extra_params %}{{ extra_params }}{% endif %} &"
+    default: "DEPLOY_ENV={{ st2kv.system.deploy.env }} nohup {{ st2kv.system.bcl2fastq.run.script }} -R {{ runfolder_dir }} -n {{ runfolder_name }} -o {{ output_dir }} -k {{ st2kv.system.api.key.webhook }} {% if extra_params %}{{ extra_params }}{% endif %} &"
   sudo:
     immutable: true

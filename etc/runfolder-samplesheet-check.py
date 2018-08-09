@@ -4,6 +4,7 @@ import socket
 import datetime
 import collections
 from sample_sheet import SampleSheet
+# Sample sheet library: https://github.com/clintval/sample-sheet
 
 
 SCRIPT = os.path.basename(__file__)
@@ -39,47 +40,52 @@ def main():
     sample_sheet = SampleSheet(samplesheet_file_path)
     write_log("INFO: Checking SampleSheet %s" % samplesheet_file_path)
 
-    # first create all index length tuples
+    # Sort samples based on technology (truseq/10X and/or index length)
+    # Also replace N indexes with ""
     sorted_samples = collections.defaultdict(list)
     for sample in sample_sheet:
-        # TODO: still need to handle 10X cases....
-        # simple 10X check, has to be improved!
-        if sample.Sample_ID.startswith("SI-GA"):
-            write_log("ERROR: Looks like a 10X dataset. Cannot handle this yet.")
-            exit(1)
+        # TODO: replace N index with ""
         index_length = len(sample.index.replace("N", ""))
+        sample.index = sample.index.replace("N", "")
 
         if sample.index2:
             index2_length = len(sample.index2.replace("N", ""))
+            sample.index2 = sample.index2.replace("N", "")
         else:
             index2_length = 0
 
-        sorted_samples[(index_length, index2_length)].append(sample)
-        write_log("DEBUG: Adding sample %s to key (%s, %s)" % (sample, index_length, index2_length))
+        if sample.Sample_ID.startswith("SI-GA"):
+            sample.I5_index_ID = ""
+            sample.Sample_Project = ""
+            # sample.Sample_ID = sample.Sample_Name
+            sorted_samples[("10X", index_length, index2_length)].append(sample)
+            write_log("DEBUG: Adding sample %s to key (10X, %s, %s)" % (sample, index_length, index2_length))
+        else:
+            sorted_samples[("truseq", index_length, index2_length)].append(sample)
+            write_log("DEBUG: Adding sample %s to key (truseq, %s, %s)" % (sample, index_length, index2_length))
 
-    if len(sorted_samples) is 1:
-        key, value = sorted_samples.popitem()
-        write_log("INFO: Only one index lengths combination (%s\%s). No custom sample sheets." % (key[0], key[1]))
-    else:
-        write_log("INFO: Multiple index lengths combination. Creating custom sample sheets.")
-        count = 0
-        for key in sorted_samples:
-            count += 1
-            write_log("DEBUG: %s samples with index lengths %s/%s" % (len(sorted_samples[key]), key[0], key[1]))
+    # now that the samples have been sorted, we can write one or more custom sample sheets
+    # (which may be the same as the original if no processing was necessary)
+    write_log("INFO: Writing %s sample sheets." % len(sorted_samples))
+    count = 0
+    for key in sorted_samples:
+        count += 1
+        write_log("DEBUG: %s samples with index lengths %s/%s for %s dataset"
+                  % (len(sorted_samples[key]), key[1], key[2], key[0]))
 
-            new_sample_sheet = SampleSheet()
-            new_sample_sheet.Header = sample_sheet.Header
-            new_sample_sheet.Reads = sample_sheet.Reads
-            new_sample_sheet.Settings = sample_sheet.Settings
-            for sample in sorted_samples[key]:
-                new_sample_sheet.add_sample(sample)
+        new_sample_sheet = SampleSheet()
+        new_sample_sheet.Header = sample_sheet.Header
+        new_sample_sheet.Reads = sample_sheet.Reads
+        new_sample_sheet.Settings = sample_sheet.Settings
+        for sample in sorted_samples[key]:
+            new_sample_sheet.add_sample(sample)
 
-            new_sample_sheet_file = os.path.join(samplesheet_dir, samplesheet_name + ".custom" + str(count))
-            write_log("INFO: Creating custom sample sheet: %s" % new_sample_sheet_file)
-            f = open(new_sample_sheet_file, "w")
-            new_sample_sheet.write(f)
-            f.close()
-            write_log("DEBUG: Created custom sample sheet: %s" % new_sample_sheet_file)
+        new_sample_sheet_file = os.path.join(samplesheet_dir, samplesheet_name + ".custom." + str(count) + "." + key[0])
+        write_log("INFO: Creating custom sample sheet: %s" % new_sample_sheet_file)
+        f = open(new_sample_sheet_file, "w")
+        new_sample_sheet.write(f)
+        f.close()
+        write_log("DEBUG: Created custom sample sheet: %s" % new_sample_sheet_file)
 
     write_log("INFO: All done.")
     LOG_FILE.close()

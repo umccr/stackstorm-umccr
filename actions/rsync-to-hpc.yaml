@@ -57,6 +57,6 @@ parameters:
     description: "The command to run on the remote host."
     immutable: true
     # default: 'rsync -avzh --append-verify {{ excludes }} {{ source_paths }} -e "ssh" {{ rsync_ssh_user }}@{{ dest_host }}:{{ dest_path }}/Fastq/{{ runfolder_name }}'
-    default: "{{ st2kv.system.rsync.script }} -s {{ source_path }} {% if excludes %}-x '{{ excludes }}'{% endif %} -u {{ rsync_ssh_user }} -d {{ dest_host }} -p {{ dest_path }}"
+    default: "DEPLOY_ENV={{ st2kv.system.deploy.env }} {{ st2kv.system.rsync.script }} -s {{ source_path }} {% if excludes %}-x '{{ excludes }}'{% endif %} -u {{ rsync_ssh_user }} -d {{ dest_host }} -p {{ dest_path }}"
   sudo:
     immutable: true
