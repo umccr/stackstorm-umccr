@@ -128,7 +128,6 @@ num_custom_samplesheets=${#custom_samplesheets[@]}
 
 # we distinguish the 'normal' case, when there are no custom sample sheets
 # from the case where there are custom sample sheets
-out_dirs=() # collect the generated output directories, as they are needed in further pipeline steps
 if test "$num_custom_samplesheets" -gt 0; then
 
   write_log "INFO: Custom sample sheets detected. Starting conversion."
