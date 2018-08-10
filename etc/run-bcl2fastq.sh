@@ -155,7 +155,8 @@ if test "$num_custom_samplesheets" -gt 0; then
     fi
     # run the actual conversion
     log_file="$output_dir/${runfolder_name}_${custom_tag}.log"
-    cmd="docker run --rm -v $runfolder_dir:$runfolder_dir:ro -v $output_dir:$output_dir umccr/bcl2fastq:$bcl2fastq_version -R $runfolder_dir -o $output_dir --stats-dir=$output_dir/Stats_${custom_tag} --reports-dir=$output_dir/Reports_${custom_tag} ${optional_args[*]} $additional_params --sample-sheet $samplesheet >& $log_file"
+    echo "Starting conversion of $runfolder_name" >> $log_file
+    cmd="docker run --rm -v $runfolder_dir:$runfolder_dir:ro -v $output_dir:$output_dir umccr/bcl2fastq:$bcl2fastq_version -R $runfolder_dir -o $output_dir --stats-dir=$output_dir/Stats_${custom_tag} --reports-dir=$output_dir/Reports_${custom_tag} ${optional_args[*]} $additional_params --sample-sheet $samplesheet >> $log_file 2>&1"
     write_log "INFO: running command: $cmd"
     write_log "INFO: writing bcl2fastq logs to: $log_file"
     if test "$DEPLOY_ENV" = "prod"; then

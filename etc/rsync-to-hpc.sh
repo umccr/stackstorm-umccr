@@ -4,6 +4,7 @@ set -o pipefail
 
 # TODO: make async, i.e. webhook callback once finished
 # TODO: parallelise (for example sync each fastq file separately?)
+# TODO: refactor to allow multiple exclude parameters instead of squashing everything into one
 
 if test -z "$DEPLOY_ENV"; then
     echo "DEPLOY_ENV is not set! Set it to either 'dev' or 'prod'."
