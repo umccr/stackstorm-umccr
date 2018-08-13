@@ -6,6 +6,8 @@ import collections
 from sample_sheet import SampleSheet
 # Sample sheet library: https://github.com/clintval/sample-sheet
 
+import warnings
+warnings.simplefilter("ignore")
 
 SCRIPT = os.path.basename(__file__)
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -57,7 +59,7 @@ def main():
         if sample.Sample_ID.startswith("SI-GA"):
             sample.I5_index_ID = ""
             sample.Sample_Project = ""
-            # sample.Sample_ID = sample.Sample_Name
+            sample.Sample_ID = sample.Sample_Name
             sorted_samples[("10X", index_length, index2_length)].append(sample)
             write_log("DEBUG: Adding sample %s to key (10X, %s, %s)" % (sample, index_length, index2_length))
         else:
