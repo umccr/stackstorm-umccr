@@ -47,19 +47,22 @@ def main():
     sorted_samples = collections.defaultdict(list)
     for sample in sample_sheet:
         # TODO: replace N index with ""
-        index_length = len(sample.index.replace("N", ""))
         sample.index = sample.index.replace("N", "")
+        index_length = len(sample.index)
 
         if sample.index2:
-            index2_length = len(sample.index2.replace("N", ""))
             sample.index2 = sample.index2.replace("N", "")
+            index2_length = len(sample.index2)
+            # make sure to remove the index ID if there is no index sequence
+            if index2_length is 0:
+                sample.I5_Index_ID = ""
         else:
             index2_length = 0
 
         if sample.Sample_ID.startswith("SI-GA"):
-            sample.I5_index_ID = ""
-            sample.Sample_Project = ""
             sample.Sample_ID = sample.Sample_Name
+            sample.Sample_Name = ""
+            sample.Sample_Project = ""
             sorted_samples[("10X", index_length, index2_length)].append(sample)
             write_log("DEBUG: Adding sample %s to key (10X, %s, %s)" % (sample, index_length, index2_length))
         else:
