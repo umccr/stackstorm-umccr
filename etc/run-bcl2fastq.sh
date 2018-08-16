@@ -19,8 +19,8 @@ if test -z "$DEPLOY_ENV"; then
 fi
 
 function write_log {
-  msg="$(date +'%Y-%m-%d %H:%M:%S.%N') $script: $1"
-  echo "$msg" >> $DIR/${script}.log
+  msg="$(date +'%Y-%m-%d %H:%M:%S.%N') $script_name: $1"
+  echo "$msg" >> $DIR/${script_name}.log
   if test "$DEPLOY_ENV" = "prod"; then
     echo "$msg" > /dev/udp/localhost/9999
   else
