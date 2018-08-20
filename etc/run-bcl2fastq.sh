@@ -9,7 +9,7 @@ lock_check_sleep_time=300
 script_pid=$$
 
 FLAG_WGS="--no-lane-splitting"
-FLAG_10X="--no-lane-splitting --create-fastq-for-index-reads --minimum-trimmed-read-length=8 --mask-short-adapter-reads=8 --ignore-missing-positions --ignore-missing-controls --ignore-missing-filter --ignore-missing-bcls"
+FLAG_10X="--no-lane-splitting --minimum-trimmed-read-length=8 --mask-short-adapter-reads=8 --ignore-missing-positions --ignore-missing-controls --ignore-missing-filter --ignore-missing-bcls"
 
 # NOTE: endpont URL for webhook is hard coded and therefore fixed to the dev server.
 
