@@ -50,7 +50,7 @@ fi
 
 if test "$use_case" = 'bcl2fastq'
 then
-  cmd="find . -not \( -path ./bcl2fastq.md5 -prune \) -type f | parallel -j $THREADS $HASHFUNC > ./bcl2fastq.$HASHFUNC"
+  cmd="find . -not \( -path ./bcl2fastq.$HASHFUNC -prune \) -type f | parallel -j $THREADS $HASHFUNC > ./bcl2fastq.$HASHFUNC"
   write_log "INFO: Running: $cmd"
   if test "$DEPLOY_ENV" = "prod"; then
     eval "$cmd"
@@ -59,7 +59,7 @@ then
   fi
 elif test "$use_case" = 'runfolder'
 then
-  cmd="find . -not \( -path ./Thumbnail_Images -prune \) -not \( -path ./Data -prune \) -not \( -path ./runfolder.md5 -prune \) -type f | parallel -j $THREADS $HASHFUNC > ./runfolder.$HASHFUNC"
+  cmd="find . -not \( -path ./Thumbnail_Images -prune \) -not \( -path ./Data -prune \) -not \( -path ./runfolder.$HASHFUNC -prune \) -type f | parallel -j $THREADS $HASHFUNC > ./runfolder.$HASHFUNC"
   write_log "INFO: Running: $cmd"
   if test "$DEPLOY_ENV" = "prod"; then
     eval "$cmd"
