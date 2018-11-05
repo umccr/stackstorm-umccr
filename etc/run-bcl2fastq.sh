@@ -177,7 +177,7 @@ if test "$num_custom_samplesheets" -gt 0; then
 
     # clean-up undetermined
     write_log "INFO: Cleaning up undetermined fastq files."
-    cmd="rm $output_dir/Undetermined*"
+    cmd="rm -f $output_dir/Undetermined*"
     if test "$DEPLOY_ENV" = "prod"; then
       eval "$cmd"
     else
