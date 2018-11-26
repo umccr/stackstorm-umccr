@@ -56,7 +56,7 @@ EOF
 # 1. the runfolder base path to monitor
 # 2. the folder where to store the state information
 # 3. the custom app.config to use
-cmd="docker run -d --name=$tag-$timestamp --rm -p $port:80 -v $runfolder_base:$runfolder_base:ro -v $status_base:/opt/state-folder -v $tmpfile:/opt/runfolder-service/config/app.config umccr/arteria-runfolder-docker:latest"
+cmd="docker run -d --name=$tag-$timestamp --restart=always -p $port:80 -v $runfolder_base:$runfolder_base:ro -v $status_base:/opt/state-folder -v $tmpfile:/opt/runfolder-service/config/app.config umccr/arteria-runfolder-docker:latest"
 write_log "INFO: Running: $cmd"
 eval "$cmd"
 

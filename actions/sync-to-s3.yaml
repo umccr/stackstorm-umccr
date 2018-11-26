@@ -43,6 +43,6 @@ parameters:
   cmd:
     description: "The command to run on the remote host."
     immutable: true
-    default: "AWS_ACCESS_KEY_ID={{ st2kv.system.aws.access.key }} AWS_SECRET_ACCESS_KEY={{ st2kv.system.aws.secret.access.key }} DEPLOY_ENV={{ st2kv.system.deploy.env }} {{ st2kv.system.aws.s3sync.script }} -s {{ source_dir }} -d {{ dest_dir }}{% if excludes %}{% for exclude in excludes %} --excludes {{ exclude }}{% endfor %}{% endif %} -b {{ st2kv.system.aws.s3.bucket }} -a {{ st2kv.system.aws.account }}{% if force_write %} --force{% endif %}"
+    default: "conda activate pipeline && AWS_ACCESS_KEY_ID={{ st2kv.system.aws.access.key }} AWS_SECRET_ACCESS_KEY={{ st2kv.system.aws.secret.access.key }} DEPLOY_ENV={{ st2kv.system.deploy.env }} {{ st2kv.system.aws.s3sync.script }} -s {{ source_dir }} -d {{ dest_dir }}{% if excludes %}{% for exclude in excludes %} --excludes {{ exclude }}{% endfor %}{% endif %} -b {{ st2kv.system.aws.s3.bucket }} -a {{ st2kv.system.aws.account }}{% if force_write %} --force{% endif %}"
   sudo:
     immutable: true
