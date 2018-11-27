@@ -63,8 +63,6 @@ def main():
 
         if sample.Sample_ID.startswith("SI-GA"):
             sample.Sample_ID = sample.Sample_Name
-            sample.Sample_Name = ""
-            sample.Sample_Project = ""
             sorted_samples[("10X", index_length, index2_length)].append(sample)
             write_log("DEBUG: Adding sample %s to key (10X, %s, %s)" % (sample, index_length, index2_length))
         else:
