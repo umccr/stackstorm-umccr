@@ -26,15 +26,18 @@ if test "$DEPLOY_ENV" = "prod"; then
     status_base="/opt/Pipeline/prod/runfolder-status"
     port=8888
     tag="storage-shared-monitor"
+    datadog_label="com.datadoghq.ad.logs='"'[{"source": "arteria_runfolder", "service": "arteria_share_monitor_prod"}]'"'" # composition of 3 strings: ""''"" (to avoid escaping of double quotes in json)
 else
     runfolder_base="/storage/shared/dev/Baymax"
     status_base="/opt/Pipeline/dev/runfolder-status"
     port=8899
     tag="storage-shared-monitor-dev"
+    datadog_label="com.datadoghq.ad.logs='"'[{"source": "arteria_runfolder", "service": "arteria_share_monitor_dev"}]'"'" # composition of 3 strings: ""''"" (to avoid escaping of double quotes in json)
 fi
 
 timestamp="$(date +"%Y%m%d%H%M")"
 tmpfile=$(mktemp /tmp/app.config.XXXXX)
+timestamp_label="TIMESTAMP=$timestamp"
 
 cat > $tmpfile <<- EOF
 ---
@@ -56,7 +59,7 @@ EOF
 # 1. the runfolder base path to monitor
 # 2. the folder where to store the state information
 # 3. the custom app.config to use
-cmd="docker run -d --name=$tag-$timestamp --restart=always -p $port:80 -v $runfolder_base:$runfolder_base:ro -v $status_base:/opt/state-folder -v $tmpfile:/opt/runfolder-service/config/app.config umccr/arteria-runfolder-docker:latest"
+cmd="docker run -d -l $datadog_label -l $timestamp_label --name=$tag --restart=always -p $port:80 -v $runfolder_base:$runfolder_base:ro -v $status_base:/opt/state-folder -v $tmpfile:/opt/runfolder-service/config/app.config umccr/arteria-runfolder-docker:latest"
 write_log "INFO: Running: $cmd"
 eval "$cmd"
 
