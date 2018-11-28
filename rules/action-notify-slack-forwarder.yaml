@@ -9,11 +9,11 @@ trigger:
 
 criteria:
   trigger.route:
-    pattern: umccr_slack
-    type: equals
+    pattern: "umccr_slack"
+    type: "equals"
 
 action:
-  ref: chatops.post_message
+  ref: "chatops.post_message"
   parameters:
     message: "{{ trigger.message }}"
     channel: "{{ st2kv.system.slack.channel }}"

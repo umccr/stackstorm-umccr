@@ -72,4 +72,22 @@ else
   echo " Usage: ./$script [bcl2fastq|runfolder] <directory path>"
   exit -1
 fi
+
+
+# write_log "INFO: All done."
+
+
+
+# finally notify StackStorm of completion
+if test "$DEPLOY_ENV" = "prod"; then
+  st2_webhook_url="https://stackstorm.prod.umccr.org/api/v1/webhooks/st2"
+else
+  st2_webhook_url="https://stackstorm.dev.umccr.org/api/v1/webhooks/st2"
+fi
+webhook="curl --insecure -X POST $st2_webhook_url -H \"St2-Api-Key: $st2_api_key\" -H \"Content-Type: application/json\" --data '{\"trigger\": \"umccr.checksum\", \"payload\": {\"status\": \"$status\", \"runfolder_name\": \"$runfolder_name\", \"runfolder\": \"$runfolder_dir\", \"usecase\": \"$use_case\"}}'"
+
+write_log "INFO: calling home: $webhook"
+eval "$webhook"
+
 write_log "INFO: All done."
+

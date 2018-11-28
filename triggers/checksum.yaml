@@ -1,8 +1,9 @@
 ---
-name: bcl2fastq
+name: checksum
 pack: umccr
-description: UMCCR trigger used to notify of runfolder to bcl2fastq converstion executions.
-# expected payload:
+description: UMCCR trigger used to notify of chesumc creation tasks.
+# payload:
 #  - status         : The sompletion status of the triggering event, e.g. 'done', 'error' 
+#  - usecase        : The checksum usecase. Currently only two are known: 'runfolder' or 'bcl2fastq'
 #  - runfolder      : The full path of the runfolder
 #  - runfolder_name : The name of the run/runfolder

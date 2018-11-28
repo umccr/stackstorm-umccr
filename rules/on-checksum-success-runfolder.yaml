@@ -1,0 +1,21 @@
+---
+name: on_checksum_success_runfolder
+pack: umccr
+description: Rule to act on umccr.checksum trigger instances
+enabled: false
+
+trigger:
+  type: umccr.checksum
+
+criteria:
+  trigger.status:
+    pattern: "done"
+    type: "equals"
+  trigger.usecase:
+    type: "equals"
+    pattern: "runfolder"
+
+action:
+  ref: umccr.runfolder_checksums
+  parameters:
+    runfolder_name: "{{ trigger.runfolder_name }}"
