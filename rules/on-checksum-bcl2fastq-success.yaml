@@ -1,0 +1,22 @@
+---
+name: on_checksum_bcl2fastq_success
+pack: umccr
+description: Rule to act on umccr.pipeline trigger instances related to bcl2fastq checksumming events.
+enabled: false
+
+trigger:
+  type: umccr.pipeline
+
+criteria:
+  trigger.task:
+    type: "equals"
+    pattern: "checksum.bcl2fastq"
+  trigger.status:
+    type: "equals"
+    pattern: "0"
+
+action:
+  ref: chatops.post_message
+  parameters:
+    message: "Pipeline task {{ trigger.task }} for {{ trigger.runfolder_name }} succeeded!"
+    channel: "{{ st2kv.system.slack.channel }}"

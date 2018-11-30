@@ -5,15 +5,15 @@ description: Rule to act on umccr.checksum trigger instances
 enabled: false
 
 trigger:
-  type: umccr.checksum
+  type: umccr.pipeline
 
 criteria:
   trigger.status:
-    pattern: "error"
-    type: equals
+    type: "nequals"
+    pattern: "0"
 
 action:
   ref: chatops.post_message
   parameters:
-    message: "Checksum creation for {{ trigger.usecase }} of {{ trigger.runfolder_name }} failed!"
+    message: "Pipeline task {{ trigger.task }} for {{ trigger.runfolder_name }} failed!"
     channel: "{{ st2kv.system.slack.channel }}"

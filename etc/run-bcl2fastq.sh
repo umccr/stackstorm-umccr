@@ -201,7 +201,7 @@ if test "$DEPLOY_ENV" = "prod"; then
 else
   st2_webhook_url="https://stackstorm.dev.umccr.org/api/v1/webhooks/st2"
 fi
-webhook="curl --insecure -X POST $st2_webhook_url -H \"St2-Api-Key: $st2_api_key\" -H \"Content-Type: application/json\" --data '{\"trigger\": \"umccr.bcl2fastq\", \"payload\": {\"status\": \"$status\", \"runfolder_name\": \"$runfolder_name\", \"runfolder\": \"$runfolder_dir\", \"out_dir\": \"${output_dir}\"}}'"
+webhook="curl --insecure -X POST $st2_webhook_url -H \"St2-Api-Key: $st2_api_key\" -H \"Content-Type: application/json\" --data '{\"trigger\": \"umccr.pipeline\", \"payload\": {\"task\": \"bcl2fastq_start\", \"status\": \"$status\", \"runfolder_name\": \"$runfolder_name\", \"runfolder\": \"$runfolder_dir\", \"out_dir\": \"${output_dir}\"}}'"
 
 write_log "INFO: calling home: $webhook"
 eval "$webhook"

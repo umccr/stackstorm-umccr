@@ -5,6 +5,15 @@ description: "Action check whether a sample sheet fulfils the requirements of th
 enabled: false
 runner_type: "remote-shell-cmd"
 entry_point: ''
+notify:
+  on-failure:
+    routes:
+    - umccr_slack
+    message: "*Fail*ed to launch samplesheet check for *{{ action_parameters.runfolder_name }}*."
+  on-success:
+    routes:
+    - umccr_slack
+    message: "*Success*fully launched samplesheet check for *{{ action_parameters.runfolder_name }}*."
 parameters:
   runfolder_name:
     description: "The name (not full path) of the runfolder."
@@ -34,6 +43,6 @@ parameters:
   cmd:
     description: "The command to run on the remote host."
     immutable: true
-    default: "conda activate pipeline && DEPLOY_ENV={{ st2kv.system.deploy.env }} python {{ st2kv.system.samplesheet.check.script }} {{ st2kv.system.runfolder.base.path }}/{{ runfolder_name }}/{{ samplesheet_name }}"
+    default: "conda activate pipeline && DEPLOY_ENV={{ st2kv.system.deploy.env }} python {{ st2kv.system.samplesheet.check.script }} {{ st2kv.system.runfolder.base.path }}/{{ runfolder_name }}/{{ samplesheet_name }} {{ runfolder_name }} {{ st2kv.system.api.key.webhook }}"
   sudo:
     immutable: true

@@ -1,0 +1,19 @@
+---
+name: action_notify
+pack: umccr
+description: 'Notifies UMCCR slack of action notifications'
+enabled: false
+
+trigger:
+  type: core.st2.generic.actiontrigger
+
+criteria:
+  trigger.action_ref:
+    type: "matchwildcard"
+    pattern: "umccr.*"
+
+action:
+  ref: "chatops.post_message"
+  parameters:
+    message: "Action {{ trigger.action_name }} (execution ID: {{ trigger.execution_id }}) {{ trigger.status }}. {{ trigger.action_ref }} {{ trigger.parameters }}"
+    channel: "{{ st2kv.system.slack.channel }}"

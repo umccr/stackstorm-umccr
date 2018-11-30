@@ -2,9 +2,18 @@
 name: runfolder_checksums
 pack: umccr
 description: "Create checksums for the runfolder data."
-enabled: false
+enabled: true
 runner_type: "remote-shell-cmd"
 entry_point: ''
+notify:
+  on-failure:
+    routes:
+    - umccr_slack
+    message: "*Fail*ed to launch runfolder checksum creation for *{{ action_parameters.runfolder_name }}*."
+  on-success:
+    routes:
+    - umccr_slack
+    message: "*Success*fully launched runfolder checksum creation for *{{ action_parameters.runfolder_name }}*."
 parameters:
   runfolder_name:
     description: "The name (not full path) of the runfolder."
@@ -36,6 +45,6 @@ parameters:
     description: "The command to run on the remote host."
     immutable: true
     # default: "cd {{ runfolder_base_path }}/{{ runfolder_name }} && find . -not \\( -path ./Thumbnail_Images -prune \\) -not \\( -path ./Data -prune \\) -not \\( -path ./runfolder.md5 -prune \\) -type f -exec md5sum '{}' \\; > ./runfolder.md5"
-    default: "DEPLOY_ENV={{ st2kv.system.deploy.env }} {{ st2kv.system.checksum.script }} runfolder {{ runfolder_base_path }}/{{ runfolder_name }}"
+    default: "DEPLOY_ENV={{ st2kv.system.deploy.env }} {{ st2kv.system.checksum.script }} runfolder {{ runfolder_base_path }}/{{ runfolder_name }} {{ runfolder_name }} {{ st2kv.system.api.key.webhook }}"
   sudo:
     immutable: true

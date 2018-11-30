@@ -15,5 +15,5 @@ criteria:
 action:
   ref: chatops.post_message
   parameters:
-    message: "bcl2fastq conversion failed for runfolder {{ trigger.runfolder_name }}!"
+    message: "bcl2fastq conversion failed for {{ trigger.runfolder_name }}! {{ trigger.error_message }}"
     channel: "{{ st2kv.system.slack.channel }}"

@@ -1,7 +1,7 @@
 ---
-name: on_bcl2fastq_success
+name: on_samplesheet_check_success
 pack: umccr
-description: Rule to act on umccr.bcl2fastq trigger instances
+description: Rule to act on umccr.pipeline trigger instances related to runfolder samplesheet check events.
 enabled: false
 
 trigger:
@@ -10,13 +10,13 @@ trigger:
 criteria:
   trigger.task:
     type: "equals"
-    pattern: "bcl2fastq_start"
+    pattern: "samplesheet_check"
   trigger.status:
     type: "equals"
     pattern: "0"
 
 action:
-  ref: umccr.runfolder_checksums
+  ref: umccr.bcl2fastq_start
   parameters:
     runfolder_name: "{{ trigger.runfolder_name }}"
     port: 2222

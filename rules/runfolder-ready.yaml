@@ -1,5 +1,5 @@
 ---
-name: umccr-runfolder-notify
+name: runfolder_ready
 pack: umccr
 description: "UMCCR rule acting on new runfolder triggers, notifying of new runfolders."
 enabled: false
@@ -10,6 +10,7 @@ trigger:
 criteria:  {}
 
 action:
-  ref: umccr.incoming_wf
+  ref: umccr.samplesheet_check
   parameters:
     runfolder_name: "{{ trigger.runfolder_name }}"
+    port: 2222

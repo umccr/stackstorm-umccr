@@ -9,8 +9,8 @@ trigger:
 
 criteria:
   trigger.route:
-    pattern: "umccr_slack"
     type: "equals"
+    pattern: "umccr_slack"
 
 action:
   ref: "chatops.post_message"

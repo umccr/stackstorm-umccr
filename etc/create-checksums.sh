@@ -34,6 +34,8 @@ write_log "INFO: Invocation with parameters: $*"
 
 use_case="$1"
 directory="$2"
+runfolder_name="$3"
+st2_api_key="$4"
 
 
 if test "$directory" && test -d "$directory"
@@ -54,8 +56,10 @@ then
   write_log "INFO: Running: $cmd"
   if test "$DEPLOY_ENV" = "prod"; then
     eval "$cmd"
+    exit_status="$?"
   else
     echo "$cmd"
+    exit_status="$?"
   fi
 elif test "$use_case" = 'runfolder'
 then
@@ -63,8 +67,10 @@ then
   write_log "INFO: Running: $cmd"
   if test "$DEPLOY_ENV" = "prod"; then
     eval "$cmd"
+    exit_status="$?"
   else
     echo "$cmd"
+    exit_status="$?"
   fi
 else
   write_log "ERROR: Not a valid use case: $use_case"
@@ -73,10 +79,11 @@ else
   exit -1
 fi
 
-
-# write_log "INFO: All done."
-
-
+if test "$exit_status" = "0"; then
+  status = "error"
+else
+  status = "success"
+fi
 
 # finally notify StackStorm of completion
 if test "$DEPLOY_ENV" = "prod"; then
@@ -84,7 +91,7 @@ if test "$DEPLOY_ENV" = "prod"; then
 else
   st2_webhook_url="https://stackstorm.dev.umccr.org/api/v1/webhooks/st2"
 fi
-webhook="curl --insecure -X POST $st2_webhook_url -H \"St2-Api-Key: $st2_api_key\" -H \"Content-Type: application/json\" --data '{\"trigger\": \"umccr.checksum\", \"payload\": {\"status\": \"$status\", \"runfolder_name\": \"$runfolder_name\", \"runfolder\": \"$runfolder_dir\", \"usecase\": \"$use_case\"}}'"
+webhook="curl --insecure -X POST $st2_webhook_url -H \"St2-Api-Key: $st2_api_key\" -H \"Content-Type: application/json\" --data '{\"trigger\": \"umccr.pipeline\", \"payload\": {\"task\": \"checksum.$use_case\", \"status\": \"$status\", \"runfolder_name\": \"$runfolder_name\", \"workdir\": \"$directory\"}}'"
 
 write_log "INFO: calling home: $webhook"
 eval "$webhook"
