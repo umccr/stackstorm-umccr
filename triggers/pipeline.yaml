@@ -4,7 +4,7 @@ pack: umccr
 description: UMCCR trigger used to notify of pipeline events.
 # payload:
 #  - task           : [REQUIRED] The pipeline task/step this events relate to
-#  - status         : [REQUIRED] The sompletion status of the triggering event, e.g. 'done', 'error' 
-#  - error_message  : [OPTIONAL] A descrption of the error (if any) in case of status=error
+#  - status         : [REQUIRED] The return status of the task, either 'success' or 'failure'
+#  - error_message  : [OPTIONAL] A descrption of the error in case of task failure
 #  - runfolder      : [REQUIRED] The full path of the runfolder
 #  - workdir        : [OPTIONAL] The name of the directory that the action is working on

@@ -6,6 +6,10 @@ if test -z "$DEPLOY_ENV"; then
     echo "DEPLOY_ENV is not set! Set it to either 'dev' or 'prod'."
     exit 1
 fi
+if test "$DEPLOY_ENV" = "dev"; then
+  # Wait a bit to simulate work (and avoid tasks running too close to each other)
+  sleep 5
+fi
 
 script=$(basename $0)
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"

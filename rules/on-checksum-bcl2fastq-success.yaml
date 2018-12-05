@@ -13,7 +13,7 @@ criteria:
     pattern: "checksum.bcl2fastq"
   trigger.status:
     type: "equals"
-    pattern: "0"
+    pattern: "success"
 
 action:
   ref: chatops.post_message

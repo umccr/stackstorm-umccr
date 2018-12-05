@@ -17,6 +17,10 @@ if test -z "$DEPLOY_ENV"; then
     echo "DEPLOY_ENV is not set! Set it to either 'dev' or 'prod'."
     exit 1
 fi
+if test "$DEPLOY_ENV" = "dev"; then
+  # Wait a bit to simulate work (and avoid tasks running too close to each other)
+  sleep 5
+fi
 
 function write_log {
   msg="$(date +'%Y-%m-%d %H:%M:%S.%N') $script_name: $1"
@@ -167,11 +171,11 @@ if test "$num_custom_samplesheets" -gt 0; then
     fi
 
     if [ $ret_code != 0 ]; then
-      status="error"
+      status="failure"
       write_log "ERROR: bcl2fastq conversion of $samplesheet failed with exit code: $ret_code."
       break # we are conservative and don't continue if there is an error on wich any conversion
     else
-      status="done"
+      status="success"
       write_log "INFO: bcl2fastq conversion of $samplesheet succeeded."
     fi
 

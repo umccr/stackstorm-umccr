@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import sys
 import os
+import time
 import json
 import socket
 import datetime
@@ -66,7 +67,8 @@ def st2_callback(api_key, status, runfolder_name, workdir, error_message=None):
 
 
 def main():
-    write_log("Invocation with: {}".format(str(sys.argv)))
+    write_log("Invocation with: samplesheet_path:{} runfolder_name:{} st2_api_key:{}..."
+              .format(sys.argv[1], sys.argv[2], sys.argv[3][:10]))
 
     # TODO: validate input parameters
     samplesheet_file_path = sys.argv[1]
@@ -107,6 +109,7 @@ def main():
     # now that the samples have been sorted, we can write one or more custom sample sheets
     # (which may be the same as the original if no processing was necessary)
     write_log("INFO: Writing {} sample sheets.".format(len(sorted_samples)))
+
     count = 0
     exit_status = "success"
     for key in sorted_samples:
@@ -127,11 +130,14 @@ def main():
             with open(new_sample_sheet_file, "w") as ss_writer:
                 new_sample_sheet.write(ss_writer)
         except Exception as error:
+            write_log("ERROR: Exception writing new sample sheet.")
             write_log("ERROR: {}".format(error))
-            exit_status = "error"
+            exit_status = "failure"
+            
         write_log("DEBUG: Created custom sample sheet: {}".format(new_sample_sheet_file))
 
-    try: 
+    write_log("INFO: Callback to ST2...")
+    try:
         response_json = st2_callback(api_key=st2_api_key, status=exit_status,
                                      runfolder_name=runfolder_name, workdir=samplesheet_dir)
         write_log("DEBUG: ST2 webhook response json: {}".format(json.dumps(response_json)))
@@ -148,6 +154,8 @@ if __name__ == "__main__":
         write_log("Running script in prod mode.")
     elif DEPLOY_ENV == "dev":
         write_log("Running script in dev mode.")
+        # Wait a bit to simulate work (and avoid tasks running too close to each other)
+        time.sleep(5)
     else:
         print("DEPLOY_ENV is not set! Set it to either 'dev' or 'prod'.")
         exit(1)

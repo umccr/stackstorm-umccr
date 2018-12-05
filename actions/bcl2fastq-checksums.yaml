@@ -9,11 +9,11 @@ notify:
   on-failure:
     routes:
     - umccr_slack
-    message: "*Fail*ed to launch fastq checksum creation for *{{ action_parameters.runfolder_name }}*."
+    message: "*Failure* to launch fastq checksum creation for *{{ action_parameters.runfolder_name }}*."
   on-success:
     routes:
     - umccr_slack
-    message: "*Success*fully launched fastq checksum creation for *{{ action_parameters.runfolder_name }}*."
+    message: "*Success* launching fastq checksum creation for *{{ action_parameters.runfolder_name }}*."
 parameters:
   runfolder_name:
     description: "The name (not full path) of the runfolder."
@@ -44,6 +44,6 @@ parameters:
   cmd:
     description: "The command to run on the remote host."
     immutable: true
-    default: "DEPLOY_ENV={{ st2kv.system.deploy.env }} {{ st2kv.system.checksum.script }} bcl2fastq {{ bcl2fastq_output_path }} {{ runfolder_name }} {{ st2kv.system.api.key.webhook }}"
+    default: "DEPLOY_ENV={{ st2kv.system.deploy.env }} nohup {{ st2kv.system.checksum.script }} bcl2fastq {{ bcl2fastq_output_path }} {{ runfolder_name }} {{ st2kv.system.api.key.webhook }} &"
   sudo:
     immutable: true

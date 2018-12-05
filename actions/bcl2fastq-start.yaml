@@ -9,11 +9,11 @@ notify:
   on-failure:
     routes:
     - umccr_slack
-    message: "*Fail*ed to launch bcl2fastq for *{{ action_parameters.runfolder_name }}*."
+    message: "*Failure* to launch bcl2fastq for *{{ action_parameters.runfolder_name }}*."
   on-success:
     routes:
     - umccr_slack
-    message: "*Success*fully launched bcl2fastq for *{{ action_parameters.runfolder_name }}*."
+    message: "*Success* launching bcl2fastq for *{{ action_parameters.runfolder_name }}*."
 parameters:
   runfolder_name:
     description: "The name (not full path) of the runfolder to convert."

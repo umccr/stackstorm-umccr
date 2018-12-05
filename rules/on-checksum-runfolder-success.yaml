@@ -13,7 +13,7 @@ criteria:
     pattern: "checksum.runfolder"
   trigger.status:
     type: "equals"
-    pattern: "0"
+    pattern: "success"
 
 action:
   ref: umccr.bcl2fastq_checksums

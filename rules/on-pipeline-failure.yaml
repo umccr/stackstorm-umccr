@@ -1,0 +1,19 @@
+---
+name: on_pipeline_failure
+pack: umccr
+description: Rule to act on umccr.pipeline trigger instances
+enabled: false
+
+trigger:
+  type: umccr.pipeline
+
+criteria:
+  trigger.status:
+    type: "equals"
+    pattern: "failure"
+
+action:
+  ref: chatops.post_message
+  parameters:
+    message: "Pipeline task {{ trigger.task }} for {{ trigger.runfolder_name }} failed! {{ trigger.error_message }}"
+    channel: "{{ st2kv.system.slack.channel }}"

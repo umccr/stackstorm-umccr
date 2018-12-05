@@ -16,6 +16,11 @@ if test -z "$DEPLOY_ENV"; then
     echo "DEPLOY_ENV is not set! Set it to either 'dev' or 'prod'."
     exit 1
 fi
+if test "$DEPLOY_ENV" = "dev"; then
+  # Wait a bit to simulate work (and avoid tasks running too close to each other)
+  sleep 5
+fi
+
 
 script=$(basename $0)
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -30,7 +35,7 @@ function write_log {
   fi
 }
 
-write_log "INFO: Invocation with parameters: $*"
+write_log "INFO: Invocation with parameters: $1 $2 $3 ${4:0:10}"
 
 use_case="$1"
 directory="$2"
@@ -69,7 +74,7 @@ then
     eval "$cmd"
     exit_status="$?"
   else
-    echo "$cmd"
+    write_log "DEBUG: [dev]: $cmd"
     exit_status="$?"
   fi
 else
@@ -79,10 +84,10 @@ else
   exit -1
 fi
 
-if test "$exit_status" = "0"; then
-  status = "error"
+if test "$exit_status" != "0"; then
+  status="failure"
 else
-  status = "success"
+  status="success"
 fi
 
 # finally notify StackStorm of completion
