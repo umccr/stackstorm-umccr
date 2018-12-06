@@ -1,0 +1,22 @@
+---
+name: on_checksum_runfolder_success
+pack: umccr
+description: Rule to act on umccr.pipeline trigger instances related to runfolder checksumming events.
+enabled: false
+
+trigger:
+  type: umccr.pipeline
+
+criteria:
+  trigger.task:
+    type: "equals"
+    pattern: "rsync2hpc.runfolder"
+  trigger.status:
+    type: "equals"
+    pattern: "success"
+
+action:
+  ref: chatops.post_message
+  parameters:
+    channel: "{{ st2kv.system.slack.channel }}"
+    message: "Pipeline task {{ trigger.task }} for {{ trigger.runfolder_name }} succeeded!"

@@ -32,7 +32,9 @@ function write_log {
   fi
 }
 
-write_log "INFO: Invocation with parameters: $*"
+# Apply regex to truncate the ST2 API key, to prevent it from being stored in logs
+paramstring=$(echo "$*" | perl -pe  's/(-k|--st2-api-key) ([a-zA-Z0-9]{10})[a-zA-Z0-9]+/$1 $2.../g')
+write_log "INFO: Invocation with parameters: $paramstring"
 
 if [[ $# -lt 8 ]]; then
   write_log "ERROR: Insufficient parameters"

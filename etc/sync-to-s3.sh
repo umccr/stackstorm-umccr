@@ -24,7 +24,9 @@ function write_log {
   fi
 }
 
-write_log "INFO: Invocation with parameters: $*"
+# Apply regex to truncate the ST2 API key, to prevent it from being stored in logs
+paramstring=$(echo "$*" | perl -pe  's/(-k|--st2-api-key) ([a-zA-Z0-9]{10})[a-zA-Z0-9]+/$1 $2.../g')
+write_log "INFO: Invocation with parameters: $paramstring"
 
 if test "$#" -lt 8; then
   write_log "ERROR: Insufficient parameters"
@@ -34,7 +36,7 @@ if test "$#" -lt 8; then
   echo "  - The destination path [-d|--dest-dir]"
   echo "  - The source path [-s|--source-dir]"
   echo "  - The AWS account number to upload to [-a|--account]"
-  echo "  - (optional) The sync exclusions, in aws syntax [-e|--excludes]"
+  echo "  - (optional) The sync exclusions, in aws syntax [-x|--excludes]"
   echo "  - (optional) Force write to output directory, even if it does not match the input name [-f|--force]"
   exit -1
 fi
@@ -46,7 +48,7 @@ while test "$#" -gt 0; do
   key="$1"
 
   case $key in
-    -e|--excludes)
+    -x|--excludes)
       excludes+=("$2")
       shift # past argument
       shift # past value

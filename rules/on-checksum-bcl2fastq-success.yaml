@@ -16,7 +16,10 @@ criteria:
     pattern: "success"
 
 action:
-  ref: chatops.post_message
+  ref: umccr.rsync2hpc
   parameters:
-    message: "Pipeline task {{ trigger.task }} for {{ trigger.runfolder_name }} succeeded!"
-    channel: "{{ st2kv.system.slack.channel }}"
+    usecase: "runfolder"
+    runfolder_name: "{{ trigger.runfolder_name }}"
+    source_path: "{{ st2kv.system.runfolder.base.path }}/{{ trigger.runfolder_name }}"
+    dest_path: "{{ st2kv.system.pipeline.data.base.path }}/Fastq/"
+    excludes: "--exclude Data --exclude Thumbnail_Images"
